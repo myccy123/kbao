@@ -65,6 +65,8 @@ def udpate_user_info(request):
 def update_history(request):
     body = loads(request.body)
     res_data = UserUpdateHistory.objects.all()
+    if body.get('userId', '') != '':
+        res_data = res_data.filter(user_id=body.get('userId', ''))
     return success(serialize(res_data))
 
 

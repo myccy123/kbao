@@ -21,8 +21,8 @@ urlpatterns = [
     url(r'^order/list/', order_list),
     url(r'^export/orders/', export_order_list),
     url(r'^update/user/', udpate_user_info),
-    url(r'^user/list/', user_list),
     url(r'^update/history/', update_history),
+    url(r'^user/list/', user_list),
     url(r'^charge/verify/', charge_verify),
     url(r'^order/verify/', order_verify),
     url(r'^order/resend/', order_resend),
@@ -38,5 +38,8 @@ urlpatterns = [
     url(r'^notice/add/', add_notice),
     url(r'^notice/update/', update_notice),
     url(r'^notice/delete/', delete_notice),
+    url(r'^bi/all/day/', sum_day_all),
+    url(r'^bi/all/month/', sum_month_all),
+    url(r'^bi/user/day/', sum_day_user),
     url(r'^kuaibao/callback/', kuaibao_callback),
 ]
