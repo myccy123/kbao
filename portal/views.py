@@ -453,7 +453,7 @@ def refresh_vailate_img(request):
 def upload_orders(request):
     file = request.FILES['file']
     xls = ExcelList.objects.create(excel=file)
-    xls_data = read_excel(xls.excel.path, skiprow=1)
+    xls_data = read_excel(xls.excel.path, skiprow=1, min_col=5)
     res_data = []
     for row in xls_data:
         res_data.append({

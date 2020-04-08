@@ -4,7 +4,7 @@ from openpyxl.styles import NamedStyle
 
 
 def read_excel(file_path, sheet=None, read_only=True, limit=0,
-               skiprow=0, skipcol=0):
+               skiprow=0, skipcol=0, min_col=None):
     wb = load_workbook(file_path, read_only=read_only)
     if sheet is None:
         ws = wb.active
@@ -21,6 +21,8 @@ def read_excel(file_path, sheet=None, read_only=True, limit=0,
             if j < skipcol:
                 continue
             d.append(cell.value)
+        if min_col is not None and len(row) < int(min_col):
+            d += [None for _ in range(int(min_col) - len(row))]
         res_data.append(d)
     wb.close()
     return res_data
