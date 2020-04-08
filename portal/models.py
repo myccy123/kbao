@@ -81,7 +81,7 @@ class ConsumeInfo(BaseModel):
     send_prov = models.CharField(max_length=50, blank=True)
     send_city = models.CharField(max_length=50, blank=True)
     send_county = models.CharField(max_length=50, blank=True)
-    receive_addr = models.CharField(max_length=50, blank=True)
+    receive_addr = models.CharField(max_length=500, blank=True)
     receive_prov = models.CharField(max_length=50, blank=True)
     receive_city = models.CharField(max_length=50, blank=True)
     receive_county = models.CharField(max_length=50, blank=True)
