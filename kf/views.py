@@ -332,6 +332,7 @@ def order_send(request):
         status = 'done' if order_res.get('is_printed') else 'pending'
         c.order_id = order_id
         c.status = status
+        c.task_id = order_res.get('task_id')
         c.print_date = order_res.get('print_date')
         c.save()
 
