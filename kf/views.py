@@ -3,6 +3,7 @@ import string
 
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
+from django.db import transaction
 
 from common.decorations import http_log, need_login
 from utils.dbutil import MySQL
@@ -298,6 +299,7 @@ def order_resend(request):
 
 @http_log()
 @need_login()
+@transaction.atomic
 def order_send(request):
     body = loads(request.body)
     c = ConsumeInfo.objects.get(id=body.get('id'))
