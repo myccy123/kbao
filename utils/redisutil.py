@@ -18,7 +18,7 @@ class MyRedis:
     def incr(self, key, amount=1, limit=None):
         val = self.cli.get(key)
         if val is None:
-            self.set(key, 0)
+            self.cli.set(key, 0)
 
         if limit is not None and int(self.cli.get(key)) >= limit:
             self.cli.set(key, 0)

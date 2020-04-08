@@ -136,7 +136,7 @@ def place_order(request):
     if tid == '':
         cli = MyRedis.connect('8.129.22.111')
         tid = cli.incr('ecId', limit=100)
-        tid = format_datetime(now, YYYYMMDDHHMMSS) + str(tid).zfill(3)
+        tid = format_datetime(now(), YYYYMMDDHHMMSS) + str(tid).zfill(3)
 
     recv_addr = parse_address(body.get('receiveAddr', ''))
 
