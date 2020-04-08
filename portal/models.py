@@ -69,6 +69,7 @@ class ConsumeInfo(BaseModel):
         ('fail', '已提交'),
         ('pending', '未发货'),
         ('done', '已发货'),
+        ('finish', '已签收'),
     )
 
     user_id = models.CharField(max_length=50, blank=True)
