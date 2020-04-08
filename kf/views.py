@@ -168,11 +168,17 @@ def order_list(request):
             print_date__gt=print_bgn_date,
             print_date__lt=print_end_date)
     res = dict()
-    p = Paginator(serialize(consumes), page_size)
-    res['total'] = p.count
-    res['pageSize'] = page_size
-    res['pageNum'] = page
-    res['data'] = p.page(page).object_list
+    try:
+        p = Paginator(serialize(consumes), page_size)
+        res['total'] = p.count
+        res['pageSize'] = page_size
+        res['pageNum'] = page
+        res['data'] = p.page(page).object_list
+    except:
+        res['total'] = 0
+        res['pageSize'] = page_size
+        res['pageNum'] = 0
+        res['data'] = []
     return success(res)
 
 
@@ -330,7 +336,7 @@ def order_send(request):
         c.save()
 
         user = UserInfo.objects.select_for_update().get(user_id=c.user_id)
-        user.bal = float(user.bal) - c.amt
+        user.bal = float(user.bal) - float(c.amt)
         user.save()
 
     return success(serialize(c))

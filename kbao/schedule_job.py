@@ -4,6 +4,7 @@ from utils.express_util import get_print_res
 
 def reflesh_order():
 
+    print('定时任务开始...')
     cs = ConsumeInfo.objects.filter(status='pending', print_date__isnull=True)
 
     for c in cs:

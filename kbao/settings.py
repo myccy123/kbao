@@ -61,7 +61,7 @@ CORS_ALLOW_CREDENTIALS = True
 SESSION_COOKIE_SAMESITE = None
 
 CRONJOBS = [
-    ('*/30 * * * *', 'kbao.scheduled_job.reflesh_order'),
+    ('*/30 * * * *', 'kbao.schedule_job.reflesh_order', '>> /root/kbao/uwsgi/crontab.log'),
 ]
 
 TEMPLATES = [
