@@ -471,7 +471,7 @@ def sum_day_all(request):
     sql = f'''
         select date_format(a.create_date, '%Y-%m-%d') as dt,sum(amt),sum(cost),count(1)
         from portal_consumeinfo a
-        where 1=1
+        where status <> 'fail'
         {where}
         group by dt
         order by dt desc
@@ -544,7 +544,7 @@ def sum_month_all(request):
     sql = f'''
            select date_format(a.create_date, '%Y-%m') as dt,sum(amt),sum(cost),count(1)
            from portal_consumeinfo a
-           where 1=1
+           where status <> 'fail'
            {where}
            group by dt
            order by dt desc
@@ -701,6 +701,7 @@ def sum_day_user(request):
           portal_userinfo b 
           LEFT JOIN portal_consumeinfo a
             ON a.user_id = b.user_id
+            and a.status <> 'fail'
             AND a.create_date >= DATE_ADD(
             CURDATE(),
             INTERVAL - DAY(CURDATE()) + 1 DAY
