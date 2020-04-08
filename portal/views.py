@@ -17,6 +17,7 @@ from utils.excelutil import read_excel, write_excel
 from utils.jsonutil import loads
 from utils.dateutil import *
 from utils.express_util import send_package, parse_address
+from utils.redisutil import MyRedis
 from common.response import success, error, serialize
 from portal.models import *
 from utils.randomutil import get_random
@@ -133,7 +134,9 @@ def place_order(request):
     order_id = ''
     tid = body.get('tid', '')
     if tid == '':
-        tid = get_random()
+        cli = MyRedis.connect('8.129.22.111')
+        tid = cli.incr('ecId', limit=100)
+        tid = format_datetime(now, YYYYMMDDHHMMSS) + str(tid).zfill(3)
 
     recv_addr = parse_address(body.get('receiveAddr', ''))
 
