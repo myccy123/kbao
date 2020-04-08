@@ -21,7 +21,8 @@ def get_app(method='cloud.print.do'):
         'ts': str(ts),
         'sign': sign}
 
-#402打印机秘钥8449041339824670
+
+# 402打印机秘钥8449041339824670
 def get_print_res(task_id):
     print(f'task_id({task_id})推迟3s执行调用快宝云API...')
     time.sleep(3)
@@ -210,9 +211,18 @@ def resend_package(infos):
 
 def parse_address(addr):
     df = cpca.transform([addr], cut=False)
-    return {
-        'prov': df['省'][0],
-        'city': df['市'][0],
-        'county': df['区'][0],
-        'addr': df['地址'][0]
-    }
+    if df['区'][0] == '':
+        return {
+            'prov': df['省'][0],
+            'city': df['市'][0],
+            'county': df['市'][0],
+            'addr': df['地址'][0]
+        }
+
+    else:
+        return {
+            'prov': df['省'][0],
+            'city': df['市'][0],
+            'county': df['区'][0],
+            'addr': df['地址'][0]
+        }
