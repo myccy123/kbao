@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_crontab',
     'portal',
 ]
 
@@ -58,6 +59,10 @@ CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
 
 SESSION_COOKIE_SAMESITE = None
+
+CRONJOBS = [
+    ('*/30 * * * *', 'kbao.scheduled_job.reflesh_order'),
+]
 
 TEMPLATES = [
     {
