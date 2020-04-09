@@ -218,7 +218,13 @@ def parse_address(addr):
             'county': df['市'][0],
             'addr': df['地址'][0]
         }
-
+    elif df['市'][0] == '' and df['区'][0] != '':
+        return {
+            'prov': df['省'][0],
+            'city': '省直辖县',
+            'county': df['市'][0],
+            'addr': df['地址'][0]
+        }
     else:
         return {
             'prov': df['省'][0],
