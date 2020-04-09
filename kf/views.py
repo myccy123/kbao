@@ -637,6 +637,7 @@ def sum_day_user(request):
           b.qq,
           b.email,
           DATE_FORMAT(b.create_date, '%Y-%m-%d'),
+          DATE_FORMAT(c.last_login, '%Y-%m-%d %H:%i'),
           SUM(
             CASE
               WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(
@@ -708,6 +709,8 @@ def sum_day_user(request):
           AVG(b.bal)
         FROM
           portal_userinfo b 
+          LEFT JOIN auth_user c 
+            ON b.user_id=c.username
           LEFT JOIN portal_consumeinfo a
             ON a.user_id = b.user_id
             and a.status <> 'fail'
@@ -717,7 +720,7 @@ def sum_day_user(request):
           ) 
         WHERE 1=1
         {where}
-        GROUP BY 1,2,3,4 '''
+        GROUP BY 1,2,3,4,5 '''
     res_data = []
     db = MySQL.connect('8.129.22.111', 'root', 'yujiahao', 3306, 'kbao')
     for row in db.select(sql):
@@ -726,15 +729,16 @@ def sum_day_user(request):
             'qq': row[1],
             'email': row[2],
             'signDate': row[3],
-            'yesterday_cnt': row[4],
-            'cnt': row[5],
-            'diff_cnt': row[6],
-            'yesterday_income': row[7],
-            'income': row[8],
-            'diff_income': row[9],
-            'month_income': row[10],
-            'month_cnt': row[11],
-            'bal': row[12],
+            'yesterday_cnt': row[5],
+            'cnt': row[6],
+            'diff_cnt': row[7],
+            'yesterday_income': row[8],
+            'income': row[9],
+            'diff_income': row[10],
+            'month_income': row[11],
+            'month_cnt': row[12],
+            'bal': row[13],
+            'loginDate': row[4],
         })
 
     return success(res_data)
