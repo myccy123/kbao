@@ -272,7 +272,7 @@ def export_order_list(request):
     rows = []
     for i, c in enumerate(consumes):
         row = [i + 1, c.ec_id, c.order_id, c.goods_name, c.receive_prov, c.receive_city, c.receive_county,
-               c.receive_addr, c.receiver, c.receiver_tel, express_map[c.express_type], c.create_date]
+               c.receive_addr, c.receiver, c.receiver_tel, express_map[c.express_type], format_datetime(c.create_date, "%Y-%m-%d %H:%M:%S")]
         rows.append(row)
     write_excel(f'/root/kbao/data/excel/{request.user.username}.xlsx', rows, headers)
 

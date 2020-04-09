@@ -231,7 +231,7 @@ def export_order_list(request):
         row = [i + 1 ,c.user_id, c.ec_id, c.order_id, c.goods_name, c.receive_prov,
                c.receive_city, c.receive_county,
                c.receive_addr, c.receiver, c.receiver_tel, c.express_name,
-               c.create_date, c.print_date]
+               format_datetime(c.create_date, "%Y-%m-%d %H:%M:%S"), format_datetime(c.print_date, "%Y-%m-%d %H:%M:%S")]
         rows.append(row)
     write_excel(f'/root/kbao/data/excel/{request.user.username}.xlsx', rows,
                 headers)
