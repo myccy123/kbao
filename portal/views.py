@@ -202,6 +202,8 @@ def place_order(request):
                                      status=status,
                                      amt=body.get('amt'),
                                      cost=body.get('cost'),
+                                     batch=body.get('batch'),
+                                     idx=body.get('idx'),
                                      print_date=print_date,
                                      task_id=task_id)
 
@@ -230,7 +232,7 @@ def order_list(request):
     page_size = int(body.get('pageSize', 10))
     page = body.get('page', 1)
 
-    consumes = ConsumeInfo.objects.filter(user_id=request.user.username).order_by('-update_date')
+    consumes = ConsumeInfo.objects.filter(user_id=request.user.username).order_by('batch', 'idx', '-update_date')
     if order_status != '':
         consumes = consumes.filter(status=order_status)
     if order_id != '':
@@ -265,7 +267,7 @@ def export_order_list(request):
     if flow_date[1] != '':
         end_date = parse_datetime(flow_date[1])
 
-    consumes = ConsumeInfo.objects.filter(user_id=request.user.username).order_by('-update_date')
+    consumes = ConsumeInfo.objects.filter(user_id=request.user.username).order_by('batch', 'idx', '-update_date')
     if order_status != '':
         consumes = consumes.filter(status=order_status)
     if order_id != '':
