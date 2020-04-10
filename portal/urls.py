@@ -26,6 +26,7 @@ urlpatterns = [
     url(r'^charge/list/', charge_list),
     url(r'^place/order/', place_order),
     url(r'^flow/list/', all_flow),
+    url(r'^export/flows/', export_flow_list),
     url(r'^order/list/', order_list),
     url(r'^export/orders/', export_order_list),
     url(r'^user/info/', get_user_info),

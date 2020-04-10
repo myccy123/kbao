@@ -343,6 +343,91 @@ def all_flow(request):
 
     return success(res)
 
+@http_log()
+@need_login()
+def export_flow_list(request):
+    body = loads(request.body)
+    flow_type = body.get('chargeType', '')
+    flow_date = body.get('chargeDate')
+    bgn_date = None
+    end_date = None
+    if flow_date[0] != '':
+        bgn_date = parse_datetime(flow_date[0])
+    if flow_date[1] != '':
+        end_date = parse_datetime(flow_date[1])
+    flow_min_amt = body.get('chargeMinAmt', -1)
+    flow_max_amt = body.get('chargeMaxAmt', -1)
+    page_size = int(body.get('pageSize', 10))
+    page = body.get('page', 1)
+    res_data = []
+
+    if flow_type != 'order':
+        charges = ChargeInfo.objects.filter(user_id=request.user.username).order_by('-create_date')
+        if flow_type == 'bal':
+            charges = charges.filter(charge_type='bal')
+        if flow_type == 'vip':
+            charges = charges.filter(charge_type__in=['be_normal', 'be_vip', 'be_proxy'])
+        if all([bgn_date, end_date]):
+            charges = charges.filter(create_date__gt=bgn_date, create_date__lt=end_date)
+        if flow_min_amt != -1:
+            charges = charges.filter(amt__gt=flow_min_amt)
+        if flow_max_amt != -1:
+            charges = charges.filter(amt__lt=flow_max_amt)
+        charges.exclude(status='reject')
+        for c in charges:
+            res_data.append({
+                'chart_type': c.charge_type if c.charge_type == 'bal' else 'vip',
+                'amt': c.amt,
+                'chargeStatus': c.status,
+                'orderStatus': '',
+                'charge_date': c.create_date,
+            })
+        charge_status = {'pending': '待审核', 'done': '已到账','reject': '已拒绝'}
+
+        headers = ['类型', '金额', '状态', '创建时间']
+        rows = []
+        total_amt = 0
+        for i, c in enumerate(charges):
+            row = ['充值', c.amt, charge_status[c.status],format_datetime(c.create_date, "%Y-%m-%d %H:%M:%S")]
+            rows.append(row)
+            total_amt += c.amt
+        if total_amt != 0:
+            rows.append(['', '总计：' + total_amt], '', '')
+        write_excel(f'/root/kbao/data/excel/{request.user.username}.xlsx', rows, headers)
+
+        return success({'excel_url': f'/data/excel/{request.user.username}.xlsx'})
+
+    if flow_type in ('', 'order'):
+        consumes = ConsumeInfo.objects.filter(user_id=request.user.username).order_by('-create_date')
+        if all([bgn_date, end_date]):
+            consumes = consumes.filter(create_date__gt=bgn_date, create_date__lt=end_date)
+        if flow_min_amt != -1:
+            consumes = consumes.filter(amt__gt=flow_min_amt)
+        if flow_max_amt != -1:
+            consumes = consumes.filter(amt__lt=flow_max_amt)
+
+        express_map = dict()
+        db = MySQL.connect('127.0.0.1', 'root', 'yujiahao', '3306', 'kbao')
+        for row in db.select("select code_value, code_value_name from portal_codeinfo where code_type='express_type'"):
+            express_map[row[0]] = row[1]
+
+        headers = ['类型', '淘宝订单号', '运单号', '包裹类型', '收件省份', '收件城市', '收件地区', '收件详细地址', '收件人姓名',
+                   '收件人电话', '快递品牌', '创建时间','金额']
+        rows = []
+        total_amt = 0
+        for i, c in enumerate(consumes):
+            row = ['购买单号', c.ec_id, c.order_id, c.goods_name, c.receive_prov, c.receive_city, c.receive_county,
+                   c.receive_addr, c.receiver, c.receiver_tel, express_map[c.express_type],
+                   format_datetime(c.create_date, "%Y-%m-%d %H:%M:%S"), c.amt]
+            rows.append(row)
+            total_amt += c.amt
+        if total_amt != 0:
+            rows.append(['', '','','','', '','',
+                       '', '', '','',
+                       '', '总计：'+total_amt])
+        write_excel(f'/root/kbao/data/excel/{request.user.username}.xlsx', rows, headers)
+
+        return success({'excel_url': f'/data/excel/{request.user.username}.xlsx'})
 
 @http_log()
 @need_login()
