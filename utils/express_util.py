@@ -235,6 +235,8 @@ def address_clean(addr):
                 'county': jsn['data'][0]['district'],
                 'addr': jsn['data'][0]['address']
             }
+        else:
+            return {'status': '01', 'message': '地址解析失败！'}
     else:
         return {'status': '01', 'message': '请求失败！'}
 
