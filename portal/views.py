@@ -369,6 +369,7 @@ def export_flow_list(request):
             consumes = consumes.filter(amt__gt=flow_min_amt)
         if flow_max_amt != -1:
             consumes = consumes.filter(amt__lt=flow_max_amt)
+        consumes.exclude(status='fail')
 
         express_map = dict()
         db = MySQL.connect('127.0.0.1', 'root', 'yujiahao', '3306', 'kbao')
