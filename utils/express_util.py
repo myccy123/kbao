@@ -209,6 +209,7 @@ def resend_package(infos):
     body['data'] = dumps(body['data'])
     return send_req(body)
 
+
 def address_clean(addr):
     body = get_app('cloud.address.cleanse')
     body['data'] = loads('''
