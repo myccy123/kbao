@@ -16,7 +16,7 @@ from utils.dbutil import MySQL
 from utils.excelutil import read_excel, write_excel
 from utils.jsonutil import loads
 from utils.dateutil import *
-from utils.express_util import send_package, parse_address
+from utils.express_util import send_package, parse_address,address_clean
 from utils.redisutil import MyRedis
 from common.response import success, error, serialize
 from portal.models import *
@@ -161,6 +161,19 @@ def place_order(request):
     print_date = None
     task_id = ''
     order_res = send_package(order_info)
+
+    # 收件人区县错误，重新解析
+    if order_res.get('status') == '01' and order_res.get('code') == 9009:
+        clean_addr = address_clean(body.get('receiver', '')+body.get('receiveAddr', ''))
+        if clean_addr.get('status') == '00':
+            recv_addr = clean_addr
+            order_info['recv_city'] = recv_addr.get('city', '')
+            order_info['recv_addr'] = recv_addr.get('addr', '')
+            order_info['recv_county'] = recv_addr.get('county', '')
+            order_info['recv_prov'] = recv_addr.get('prov', '')
+            order_res = send_package(order_info)
+
+
     if order_res.get('status') == '00' and order_res.get('waybill_code') is not None:
         order_id = order_res.get('waybill_code')
         print_date = order_res.get('print_date')

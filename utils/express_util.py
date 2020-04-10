@@ -70,7 +70,8 @@ def get_req_status(res, tid=None):
             else:
                 return {
                     'status': '01',
-                    'message': jsn[0][1]['message']
+                    'message': jsn[0][1]['message'],
+                    'code': jsn[0][1]['code']
                 }
         else:
             # 补打
@@ -207,6 +208,35 @@ def resend_package(infos):
             '''))
     body['data'] = dumps(body['data'])
     return send_req(body)
+
+def address_clean(addr):
+    body = get_app('cloud.address.cleanse')
+    body['data'] = loads('''
+                {		
+                    "multimode":false,
+                    "cleanTown":false
+                }
+            ''')
+    body['data']['text'] = addr
+    body['data'] = dumps(body['data'])
+    headers = {
+        'content-type': "application/x-www-form-urlencoded",
+    }
+    res = requests.post('https://kop.kuaidihelp.com/api', headers=headers, data=body)
+    if int(res.status_code) == 200:
+        print(f'已调用快宝云数据清洗API...')
+        print(dumps(res.json()))
+        jsn = res.json()
+        if jsn['code'] == 0:
+            return {
+                'status': '00',
+                'prov': jsn['data'][0]['province'],
+                'city': jsn['data'][0]['city'],
+                'county': jsn['data'][0]['district'],
+                'addr': jsn['data'][0]['address']
+            }
+    else:
+        return {'status': '01', 'message': '请求失败！'}
 
 
 def parse_address(addr):
