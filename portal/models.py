@@ -95,7 +95,7 @@ class ConsumeInfo(BaseModel):
     amt = models.DecimalField(max_digits=16, decimal_places=2, default=0)
     cost = models.DecimalField(max_digits=16, decimal_places=2, default=0)
     status = models.CharField(max_length=50, choices=CONSUME_STATUS, default='pending')
-    batch = models.IntegerField(default=0)
+    batch = models.CharField(max_length=50, blank=True)
     idx = models.IntegerField(default=0)
     print_date = models.DateTimeField(null=True)
     task_id = models.CharField(max_length=50, blank=True)
