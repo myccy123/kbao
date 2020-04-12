@@ -137,7 +137,7 @@ def place_order(request):
     body = loads(request.body)
     order_id = ''
     tid = body.get('tid', '')
-    if tid == '':
+    if tid == '' or tid == 'null':
         cli = MyRedis.connect('8.129.22.111')
         tid = cli.incr('ecId', limit=99)
         tid = format_datetime(now(), YYYYMMDDHHMMSS) + str(tid).zfill(2)
@@ -236,7 +236,7 @@ def order_list(request):
     page_size = int(body.get('pageSize', 10))
     page = body.get('page', 1)
 
-    consumes = ConsumeInfo.objects.filter(user_id=request.user.username).order_by('batch', 'idx', '-update_date')
+    consumes = ConsumeInfo.objects.filter(user_id=request.user.username).order_by('-update_date')
     if order_status != '':
         consumes = consumes.filter(status=order_status)
     if order_id != '':
@@ -563,6 +563,8 @@ def upload_orders(request):
     xls_data = read_excel(xls.excel.path, skiprow=1, min_col=5)
     res_data = []
     for row in xls_data:
+        if str(row[0]).strip() == '' and str(row[1]).strip() == '' and str(row[2]).strip() == '' and str(row[3]).strip()== '':
+            continue
         res_data.append({
             'tid': row[4],
             'goodsName': row[0],
