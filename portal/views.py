@@ -11,6 +11,7 @@ from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.db import transaction
 
+
 from common.decorations import http_log, need_login
 from utils.dbutil import MySQL
 from utils.excelutil import read_excel, write_excel
@@ -21,6 +22,9 @@ from utils.redisutil import MyRedis
 from common.response import success, error, serialize
 from portal.models import *
 from utils.randomutil import get_random
+from utils.kbalipay.kb_alipay_util import kb_alipay
+
+
 
 
 # Create your views here.
@@ -568,6 +572,58 @@ def upload_orders(request):
         })
     return success(res_data)
 
+@http_log()
+def charge_pay(request):
+    body = loads(request.body)
+    order_id = body["order_id"]
+    # 创建用于进行支付宝支付的工具对象
+    appurl,returnurl,alipay = kb_alipay()
+
+    # 电脑网站支付，需要跳转到https://openapi.kbalipay.com/gateway.do? + order_string
+    order_string = alipay.api_alipay_trade_page_pay(
+        out_trade_no=order_id,
+        total_amount=str(0.01),  # 将Decimal类型转换为字符串交给支付宝
+        subject="商贸商城",
+        return_url=returnurl,
+        notify_url=None  # 可选, 不填则使用默认notify url
+    )
+
+    # 让用户进行支付的支付宝页面网址
+    url = appurl + "?" + order_string
+
+    return success({"code": 0, "message": "请求支付成功", "url": url})
+@http_log()
+def check_pay(request):
+    # 创建用于进行支付宝支付的工具对象
+    body = loads(request.body)
+    order_id = body["order_id"]
+    appurl,returnurl,alipay = kb_alipay()
+    request_time = 0;
+    while True:
+        # 调用alipay工具查询支付结果
+        response = alipay.api_alipay_trade_query(order_id)  # response是一个字典
+
+        # 判断支付结果
+        code = response.get("code")  # 支付宝接口调用成功或者错误的标志
+        trade_status = response.get("trade_status")  # 用户支付的情况
+
+        if code == "10000" and trade_status == "TRADE_SUCCESS":
+            # 表示用户支付成功
+            # 返回前端json，通知支付成功
+            return success({"code": 0, "message": "支付成功"})
+
+        elif code == "40004" or (code == "10000" and trade_status == "WAIT_BUYER_PAY"):
+            # 表示支付宝接口调用暂时失败，（支付宝的支付订单还未生成） 后者 等待用户支付
+            # 继续查询
+            print(code)
+            print(trade_status)
+            request_time +=1;
+            if request_time<300:
+                continue
+        else:
+            # 支付失败
+            # 返回支付失败的通知
+            return success({"code": code, "message": trade_status})
 
 def index(request):
     return render(request, 'kbao/index.html')

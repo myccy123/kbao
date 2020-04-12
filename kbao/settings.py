@@ -62,6 +62,8 @@ SESSION_COOKIE_SAMESITE = None
 
 CRONJOBS = [
     ('*/30 * * * *', 'kbao.schedule_job.reflesh_order', '>> /root/kbao/uwsgi/crontab.log'),
+    # ('* 1 * * *', 'kbao.schedule_job.create_wl_select', '>> /root/kbao/uwsgi/crontab.log'),
+    # ('* 3 * * *', 'kbao.schedule_job.find_wl_result', '>> /root/kbao/uwsgi/crontab.log'),
 ]
 
 TEMPLATES = [
@@ -146,3 +148,7 @@ STATICFILES_DIRS = (
     os.path.join(BASE_DIR, r'static'),
     MEDIA_ROOT,
 )
+
+ALIPAY_APPID = "2016101700708942"
+ALIPAY_URL = "https://openapi.alipaydev.com/gateway.do"
+RETURN_URL = "http://8.129.22.111/#/home/userRecharge/"

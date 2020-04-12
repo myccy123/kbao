@@ -42,4 +42,5 @@ urlpatterns = [
     url(r'^bi/all/month/', sum_month_all),
     url(r'^bi/user/day/', sum_day_user),
     url(r'^kuaibao/callback/', kuaibao_callback),
+    url(r'^ali/callback/', ali_callback),
 ]

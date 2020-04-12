@@ -748,3 +748,9 @@ def sum_day_user(request):
 def kuaibao_callback(request):
     body = loads(request.body)
     return success()
+
+@http_log()
+def ali_callback(request):
+    print("支付宝扫码支付")
+    body = loads(request.body)
+    return success()
