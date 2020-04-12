@@ -23,9 +23,9 @@ def get_app(method='cloud.print.do'):
 
 
 # 402打印机秘钥8449041339824670
-def get_print_res(task_id):
-    print(f'task_id({task_id})推迟3s执行调用快宝云API...')
-    time.sleep(3)
+def get_print_res(task_id, sleep_time=3):
+    print(f'task_id({task_id})推迟2s执行调用快宝云API...')
+    time.sleep(sleep_time)
     body = get_app()
     body['data'] = loads(f'''
             {{		
