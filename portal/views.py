@@ -577,14 +577,15 @@ def upload_orders(request):
 @http_log()
 def charge_pay(request):
     body = loads(request.body)
-    order_id = body["order_id"]
+    amount = body["amount"]
+    userid = body["userid"]
     # 创建用于进行支付宝支付的工具对象
     ali_url,alipay = kb_alipay()
-
+    order_id = userid+format_datetime(now(), YYYYMMDDHHMMSS)
     # 电脑网站支付，需要跳转到https://openapi.kbalipay.com/gateway.do? + order_string
     order_string = alipay.api_alipay_trade_page_pay(
         out_trade_no=order_id,
-        total_amount=str(0.01),  # 将Decimal类型转换为字符串交给支付宝
+        total_amount=str(amount),  # 将Decimal类型转换为字符串交给支付宝
         subject="商贸商城",
         return_url=ali_url.get('return_url') + "?orderId=" + order_id,
         notify_url=ali_url.get('notify_url')  # 可选, 不填则使用默认notify url
@@ -619,9 +620,11 @@ def check_pay(request):
             # 继续查询
             print(code)
             print(trade_status)
-            request_time +=1;
-            if request_time < 60:
+            request_time += 1;
+            if request_time < 10:
                 continue
+            else:
+                return error({"code": 0, "message": "支付失败"})
         else:
             # 支付失败
             # 返回支付失败的通知
