@@ -752,5 +752,9 @@ def kuaibao_callback(request):
 @http_log()
 def ali_callback(request):
     print("支付宝扫码支付")
-    body = loads(request.body)
+    method_param = getattr(request, request.method)
+    print("支付金额",method_param['buyer_pay_amount'])
+    print("支付状态", method_param['trade_status'])
+    print("订单号",method_param['out_trade_no'])
+
     return success()
