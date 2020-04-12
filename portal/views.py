@@ -404,7 +404,7 @@ def export_flow_list(request):
                    c.receive_addr, c.receiver, c.receiver_tel, express_map[c.express_type],
                    format_datetime(c.create_date, "%Y-%m-%d %H:%M:%S"), c.amt]
             rows.append(row)
-            total_amt += c.amt
+            total_amt += float(c.amt)
         if total_amt != 0:
             rows.append(['', '','','','', '','',
                        '', '', '','',
@@ -442,7 +442,7 @@ def export_flow_list(request):
         for i, c in enumerate(charges):
             row = ['充值', c.amt, charge_status[c.status],format_datetime(c.create_date, "%Y-%m-%d %H:%M:%S")]
             rows.append(row)
-            total_amt += c.amt
+            total_amt += float(c.amt)
         if total_amt != 0:
             rows.append(['', '总计：' + total_amt], '', '')
         write_excel(f'/root/kbao/data/excel/{request.user.username}.xlsx', rows, headers)
