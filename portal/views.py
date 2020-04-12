@@ -23,7 +23,7 @@ from common.response import success, error, serialize
 from portal.models import *
 from utils.randomutil import get_random
 from utils.kbalipay.kb_alipay_util import kb_alipay
-
+from decimal import Decimal
 
 
 
@@ -404,11 +404,11 @@ def export_flow_list(request):
                    c.receive_addr, c.receiver, c.receiver_tel, express_map[c.express_type],
                    format_datetime(c.create_date, "%Y-%m-%d %H:%M:%S"), c.amt]
             rows.append(row)
-            total_amt += float(c.amt)
+            total_amt += Decimal(c.amt)
         if total_amt != 0:
             rows.append(['', '','','','', '','',
                        '', '', '','',
-                       '', '总计：'+total_amt])
+                       '', '总计：'+str(total_amt)])
         write_excel(f'/root/kbao/data/excel/{request.user.username}.xlsx', rows, headers)
 
         return success({'excel_url': f'/data/excel/{request.user.username}.xlsx'})
@@ -442,9 +442,9 @@ def export_flow_list(request):
         for i, c in enumerate(charges):
             row = ['充值', c.amt, charge_status[c.status],format_datetime(c.create_date, "%Y-%m-%d %H:%M:%S")]
             rows.append(row)
-            total_amt += float(c.amt)
+            total_amt += Decimal(c.amt)
         if total_amt != 0:
-            rows.append(['', '总计：' + total_amt], '', '')
+            rows.append(['', '总计：' + str(total_amt)], '', '')
         write_excel(f'/root/kbao/data/excel/{request.user.username}.xlsx', rows, headers)
 
         return success({'excel_url': f'/data/excel/{request.user.username}.xlsx'})
