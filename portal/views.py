@@ -138,7 +138,7 @@ def place_order(request):
     order_id = ''
     tid = body.get('tid', '')
     if tid == '' or tid == 'null':
-        cli = MyRedis.connect('8.129.22.111')
+        cli = MyRedis.connect('127.0.0.1')
         tid = cli.incr('ecId', limit=99)
         tid = format_datetime(now(), YYYYMMDDHHMMSS) + str(tid).zfill(2)
 
