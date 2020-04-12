@@ -15,8 +15,12 @@ def http_log():
                         dumps(dict(request.COOKIES)))
             logger.info('request params   ↓↓↓↓↓↓↓\n %s',
                         dumps(getattr(request, request.method)))
-            logger.info('request body     ↓↓↓↓↓↓↓\n %s',
-                        pretty(request.body.decode()))
+            if request.body is not None:
+                logger.info('request body     ↓↓↓↓↓↓↓\n %s',
+                            pretty(request.body.decode()))
+            else:
+                logger.info('request body     ↓↓↓↓↓↓↓\n %s',
+                            {})
             result = func(*args, **kwargs)
             # logger.info('response content ↓↓↓↓↓↓↓\n %s',
             #             result.content.decode())

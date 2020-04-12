@@ -152,3 +152,4 @@ STATICFILES_DIRS = (
 ALIPAY_APPID = "2016101700708942"
 ALIPAY_URL = "https://openapi.alipaydev.com/gateway.do"
 RETURN_URL = "http://8.129.22.111/#/home/userRecharge/"
+NOTICE_URL = "http://8.129.22.111/kf/ali/callback/"

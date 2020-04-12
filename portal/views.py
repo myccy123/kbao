@@ -206,8 +206,8 @@ def place_order(request):
                                      status=status,
                                      amt=body.get('amt'),
                                      cost=body.get('cost'),
-                                     batch=body.get('batch'),
-                                     idx=body.get('idx'),
+                                     batch=body.get('batch',''),
+                                     idx=body.get('idx',''),
                                      print_date=print_date,
                                      task_id=task_id)
 
@@ -577,19 +577,19 @@ def charge_pay(request):
     body = loads(request.body)
     order_id = body["order_id"]
     # 创建用于进行支付宝支付的工具对象
-    appurl,returnurl,alipay = kb_alipay()
+    ali_url,alipay = kb_alipay()
 
     # 电脑网站支付，需要跳转到https://openapi.kbalipay.com/gateway.do? + order_string
     order_string = alipay.api_alipay_trade_page_pay(
         out_trade_no=order_id,
         total_amount=str(0.01),  # 将Decimal类型转换为字符串交给支付宝
         subject="商贸商城",
-        return_url=returnurl,
-        notify_url=None  # 可选, 不填则使用默认notify url
+        return_url=ali_url.get('return_url') + "?orderId=" + order_id,
+        notify_url=ali_url.get('notify_url')  # 可选, 不填则使用默认notify url
     )
 
     # 让用户进行支付的支付宝页面网址
-    url = appurl + "?" + order_string
+    url = ali_url.get('alipay_url') + "?" + order_string
 
     return success({"code": 0, "message": "请求支付成功", "url": url})
 @http_log()
@@ -597,8 +597,8 @@ def check_pay(request):
     # 创建用于进行支付宝支付的工具对象
     body = loads(request.body)
     order_id = body["order_id"]
-    appurl,returnurl,alipay = kb_alipay()
-    request_time = 0;
+    ali_url,alipay = kb_alipay()
+    request_time = 0
     while True:
         # 调用alipay工具查询支付结果
         response = alipay.api_alipay_trade_query(order_id)  # response是一个字典
@@ -618,7 +618,7 @@ def check_pay(request):
             print(code)
             print(trade_status)
             request_time +=1;
-            if request_time<300:
+            if request_time < 60:
                 continue
         else:
             # 支付失败
