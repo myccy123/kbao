@@ -202,8 +202,8 @@ def place_order(request):
                                      status=status,
                                      amt=body.get('amt'),
                                      cost=body.get('cost'),
-                                     batch=body.get('batch'),
-                                     idx=body.get('idx'),
+                                     batch=body.get('batch', ''),
+                                     idx=body.get('idx', 0),
                                      print_date=print_date,
                                      task_id=task_id)
 
