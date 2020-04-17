@@ -100,6 +100,9 @@ class ConsumeInfo(BaseModel):
     print_date = models.DateTimeField(null=True)
     task_id = models.CharField(max_length=50, blank=True)
 
+    class Meta:
+        indexes = [models.Index(fields=['update_date', 'status']), ]
+
 
 class ExpressOrderInfo(BaseModel):
     ORDER_STATUS = (

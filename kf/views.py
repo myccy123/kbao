@@ -151,7 +151,7 @@ def order_list(request):
     page_size = int(body.get('pageSize', 10))
     page = body.get('page', 1)
     consumes = ConsumeInfo.objects.filter(user_id__contains=user_id).order_by(
-        '-create_date')
+        '-update_date')
     if order_id != '':
         consumes = consumes.filter(order_id=order_id)
     if tid != '':
