@@ -82,11 +82,11 @@ def user_list(request):
                                     user_id__contains=user_id).order_by(
         '-create_date')
     res = dict()
-    p = Paginator(serialize(users), page_size)
+    p = Paginator(users, page_size)
     res['total'] = p.count
     res['pageSize'] = page_size
     res['pageNum'] = page
-    res['data'] = p.page(page).object_list
+    res['data'] = serialize(p.page(page).object_list)
     return success(res)
 
 
@@ -117,11 +117,11 @@ def charge_list(request):
         charges = charges.filter(amt__lt=flow_max_amt)
 
     res = dict()
-    p = Paginator(serialize(charges), page_size)
+    p = Paginator(charges, page_size)
     res['total'] = p.count
     res['pageSize'] = page_size
     res['pageNum'] = page
-    res['data'] = p.page(page).object_list
+    res['data'] = serialize(p.page(page).object_list)
     return success(res)
 
 
@@ -169,11 +169,11 @@ def order_list(request):
             print_date__lt=print_end_date)
     res = dict()
     try:
-        p = Paginator(serialize(consumes), page_size)
+        p = Paginator(consumes, page_size)
         res['total'] = p.count
         res['pageSize'] = page_size
         res['pageNum'] = page
-        res['data'] = p.page(page).object_list
+        res['data'] = serialize(p.page(page).object_list)
     except:
         res['total'] = 0
         res['pageSize'] = page_size

@@ -247,11 +247,11 @@ def order_list(request):
         consumes = consumes.filter(create_date__gt=bgn_date, create_date__lt=end_date)
 
     res = dict()
-    p = Paginator(serialize(consumes), page_size)
+    p = Paginator(consumes, page_size)
     res['total'] = p.count
     res['pageSize'] = page_size
     res['pageNum'] = page
-    res['data'] = p.page(page).object_list
+    res['data'] = serialize(p.page(page).object_list)
 
     return success(res)
 
