@@ -27,6 +27,7 @@ urlpatterns = [
     url(r'^order/verify/', order_verify),
     url(r'^order/resend/', order_resend),
     url(r'^order/send/', order_send),
+    url(r'^order/resendDetailExport/', export_resend_detail),
     url(r'^express/save/', express_save),
     url(r'^express/list/', express_list),
     url(r'^express/delete/', express_delete),

@@ -11,7 +11,7 @@ from utils.jsonutil import loads
 from utils.dateutil import *
 from utils.excelutil import *
 from utils.express_util import resend_package, send_package
-from common.response import success, serialize
+from common.response import success, error, serialize
 from portal.models import *
 
 
@@ -238,6 +238,33 @@ def export_order_list(request):
 
     return success({'excel_url': f'/data/excel/{request.user.username}.xlsx'})
 
+@http_log()
+@need_login()
+def export_resend_detail(request):
+    body = loads(request.body)
+    order_ids = body.get('orderIds', '')
+    rows = []
+
+    if order_ids != '':
+        order_id_arry = order_ids.split(',')
+        consumes = ConsumeInfo.objects.filter(order_id__in=order_id_arry).order_by(
+            '-update_date')
+        for i, c in enumerate(consumes):
+            row = [i + 1, c.user_id, c.ec_id, c.order_id, c.goods_name, c.receive_prov,
+                   c.receive_city, c.receive_county,
+                   c.receive_addr, c.receiver, c.receiver_tel,
+                   format_datetime(c.create_date, "%Y-%m-%d %H:%M:%S")]
+            rows.append(row)
+
+    headers = ['序号', '账号', '淘宝订单号', '运单号', '包裹类型', '收件省份', '收件城市', '收件地区', '收件详细地址',
+               '收件人姓名',
+               '收件人电话', '创建时间']
+
+
+    write_excel(f'/root/kbao/data/excel/{request.user.username}.xlsx', rows,
+                headers)
+
+    return success({'excel_url': f'/data/excel/{request.user.username}.xlsx'})
 
 @http_log()
 @need_login()
@@ -273,34 +300,49 @@ def order_verify(request):
 def order_resend(request):
     body = loads(request.body)
     infos = []
-    for c in ConsumeInfo.objects.filter(id__in=body.get('id')):
-        info = {
-            'tid': c.ec_id,
-            'order_id': c.order_id,
-            'goods_name': c.goods_name,
-            'send_city': c.send_city,
-            'send_addr': c.send_addr,
-            'send_county': c.send_county,
-            'send_prov': c.send_prov,
-            'send_tel': c.sender_tel,
-            'send_name': c.sender,
-            'recv_city': c.receive_city,
-            'recv_addr': c.receive_addr,
-            'recv_county': c.receive_county,
-            'recv_prov': c.receive_prov,
-            'recv_tel': c.receiver_tel,
-            'recv_name': c.receiver,
-        }
-        infos.append(info)
-        res = resend_package(infos)
-        if res['status'] == '00':
-            status = 'pending'
-            if res['is_printed']:
-                status = 'done'
-                c.print_date = res.get('print_date')
-            c.status = status
-            c.save()
-    return success()
+    resend_length= 0
+    consume = None
+    if body.get('id', '') != '':
+        consume = ConsumeInfo.objects.filter(id=body.get('id'))
+    elif body.get('orderId', '') != '':
+        consume = ConsumeInfo.objects.filter(order_id=body.get('orderId'))
+
+    if consume is not None :
+        for c in consume:
+            if c is None:
+                continue
+            info = {
+                'tid': c.ec_id,
+                'order_id': c.order_id,
+                'goods_name': c.goods_name,
+                'send_city': c.send_city,
+                'send_addr': c.send_addr,
+                'send_county': c.send_county,
+                'send_prov': c.send_prov,
+                'send_tel': c.sender_tel,
+                'send_name': c.sender,
+                'recv_city': c.receive_city,
+                'recv_addr': c.receive_addr,
+                'recv_county': c.receive_county,
+                'recv_prov': c.receive_prov,
+                'recv_tel': c.receiver_tel,
+                'recv_name': c.receiver,
+            }
+            infos.append(info)
+            res = resend_package(infos)
+            if res['status'] == '00':
+                resend_length = 1
+                # status = 'pending'
+                if res['is_printed']:
+                    # status = 'done'
+                    c.print_date = res.get('print_date')
+                # c.status = status
+                # c.save()
+
+    if resend_length>0:
+        return success({'resend': '1'})
+
+    return success({'resend': '0'})
 
 
 @http_log()
