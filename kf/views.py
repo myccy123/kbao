@@ -303,7 +303,7 @@ def order_resend(request):
     resend_length= 0
     consume = None
     if body.get('id', '') != '':
-        consume = ConsumeInfo.objects.filter(id=body.get('id'))
+        consume = ConsumeInfo.objects.filter(id__in=body.get('id'))
     elif body.get('orderId', '') != '':
         consume = ConsumeInfo.objects.filter(order_id=body.get('orderId'))
 
