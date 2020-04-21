@@ -332,12 +332,14 @@ def order_resend(request):
             res = resend_package(infos)
             if res['status'] == '00':
                 resend_length = 1
-                # status = 'pending'
+                status = 'pending'
                 if res['is_printed']:
-                    # status = 'done'
+                    status = 'done'
                     c.print_date = res.get('print_date')
-                # c.status = status
-                # c.save()
+                if c.status != 'done':
+                    c.status = status
+                    c.task_id = res['task_id']
+                    c.save()
 
     if resend_length>0:
         return success({'resend': '1'})

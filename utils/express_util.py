@@ -83,6 +83,7 @@ def get_req_status(res, tid=None):
                     'status': '00',
                     'is_printed': is_printed,
                     'print_date': print_date,
+                    'task_id': task_id,
                     'message': 'success'
                 }
             else:
