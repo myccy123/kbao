@@ -99,6 +99,7 @@ class ConsumeInfo(BaseModel):
     idx = models.IntegerField(default=0)
     print_date = models.DateTimeField(null=True)
     task_id = models.CharField(max_length=50, blank=True)
+    resend_num = models.IntegerField(default=0)
 
     class Meta:
         indexes = [models.Index(fields=['update_date', 'status']), ]

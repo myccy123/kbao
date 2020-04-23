@@ -124,6 +124,23 @@ def charge_list(request):
     res['data'] = serialize(p.page(page).object_list)
     return success(res)
 
+@http_log()
+@need_login()
+def order_get(request):
+    body = loads(request.body)
+    order_id = body.get('orderId', '')
+    consumes = None;
+    if order_id != '':
+        consumes = ConsumeInfo.objects.filter(order_id=order_id)
+
+    res = dict()
+    try:
+        res['total'] = 0 if consumes is None else consumes.count()
+        res['data'] = serialize(consumes)
+    except:
+        res['total'] = 0
+        res['data'] = []
+    return success(res)
 
 @http_log()
 @need_login()
@@ -339,7 +356,8 @@ def order_resend(request):
                 if c.status != 'done':
                     c.status = status
                     c.task_id = res['task_id']
-                    c.save()
+                c.resend_num = 1 if c.resend_num is None else c.resend_num+1
+                c.save()
 
     if resend_length>0:
         return success({'resend': '1'})
