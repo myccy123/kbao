@@ -316,7 +316,30 @@ def all_flow(request):
     page = body.get('page', 1)
     res_data = []
 
-    if flow_type != 'order':
+    if flow_type == 'order':
+        consumes = ConsumeInfo.objects.filter(user_id=request.user.username).order_by('-create_date')
+        if all([bgn_date, end_date]):
+            consumes = consumes.filter(create_date__gt=bgn_date, create_date__lt=end_date)
+        if flow_min_amt != -1:
+            consumes = consumes.filter(amt__gt=flow_min_amt)
+        if flow_max_amt != -1:
+            consumes = consumes.filter(amt__lt=flow_max_amt)
+        for c in consumes:
+            res_data.append({
+                'chart_type': 'order',
+                'amt': c.amt,
+                'chargeStatus': '',
+                'orderStatus': c.status,
+                'charge_date': c.create_date,
+            })
+        res = dict()
+        p = Paginator(res_data, page_size)
+        res['total'] = p.count
+        res['pageSize'] = page_size
+        res['pageNum'] = page
+        res['data'] = p.page(page).object_list
+
+    elif flow_type == 'bal':
         charges = ChargeInfo.objects.filter(user_id=request.user.username).order_by('-create_date')
         if flow_type == 'bal':
             charges = charges.filter(charge_type='bal')
@@ -336,29 +359,58 @@ def all_flow(request):
                 'orderStatus': '',
                 'charge_date': c.create_date,
             })
-    if flow_type in ('', 'order'):
-        consumes = ConsumeInfo.objects.filter(user_id=request.user.username).order_by('-create_date')
-        if all([bgn_date, end_date]):
-            consumes = consumes.filter(create_date__gt=bgn_date, create_date__lt=end_date)
+        res = dict()
+        p = Paginator(res_data, page_size)
+        res['total'] = p.count
+        res['pageSize'] = page_size
+        res['pageNum'] = page
+        res['data'] = p.page(page).object_list
+    else:
+        db = MySQL.connect('8.129.22.111', 'root', 'yujiahao', 3306, 'kbao')
+        where = f"where user_id='{request.user.username}'"
+        if bgn_date is not None and bgn_date != '':
+            where += f" and a.create_date >= '{bgn_date}'"
+        if end_date is not None and end_date != '':
+            where += f" and create_date <= '{end_date}'"
         if flow_min_amt != -1:
-            consumes = consumes.filter(amt__gt=flow_min_amt)
+            where += f" and amt > '{flow_min_amt}'"
         if flow_max_amt != -1:
-            consumes = consumes.filter(amt__lt=flow_max_amt)
-        for c in consumes:
-            res_data.append({
-                'chart_type': 'order',
-                'amt': c.amt,
-                'chargeStatus': '',
-                'orderStatus': c.status,
-                'charge_date': c.create_date,
-            })
+            where += f" and amt < '{flow_max_amt}'"
 
-    res = dict()
-    p = Paginator(res_data, page_size)
-    res['total'] = p.count
-    res['pageSize'] = page_size
-    res['pageNum'] = page
-    res['data'] = p.page(page).object_list
+
+        sql = f'''
+                SELECT * FROM(
+                SELECT 'order',amt,'',`status`,create_date FROM portal_consumeinfo 
+                {where}
+                UNION
+                SELECT charge_type,amt,`status`,'',create_date FROM portal_chargeinfo
+                {where}
+                ) c 
+            '''
+        sqlpage = sql+f" ORDER BY c.create_date DESC LIMIT {(page-1)*page_size},{page_size}"
+        sqlCount = f'''
+                    SELECT count(*) FROM(
+                    SELECT 'order',amt,'',`status`,create_date FROM portal_consumeinfo 
+                    {where}
+                    UNION
+                    SELECT charge_type,amt,`status`,'',create_date FROM portal_chargeinfo
+                    {where}
+                    ) c
+                    '''
+        all_data = dict()
+        for row in db.select(sqlpage, True):
+            res_data.append({
+                'chart_type': row[0],
+                'amt': row[1],
+                'chargeStatus': row[2],
+                'orderStatus': row[3],
+                'charge_date': row[4],
+            })
+        res = dict()
+        res['total'] = db.count(sql)
+        res['pageSize'] = page_size
+        res['pageNum'] = page
+        res['data'] = res_data
 
     return success(res)
 
