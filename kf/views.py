@@ -587,7 +587,7 @@ def sum_day_all(request):
             now_date_str, {}).get('income', None)
         now_date = tmp_day
     res_data = []
-    for new_key in sorted(all_data):
+    for new_key in sorted(all_data, reverse=True):
         res_data.append({
             'date': new_key,
             'amt': all_data[new_key]['amt'],
@@ -660,7 +660,7 @@ def sum_month_all(request):
             now_date_str, {}).get('income', None)
         now_date = tmp_day
     res_data = []
-    for new_key in sorted(all_data):
+    for new_key in sorted(all_data, reverse=True):
         res_data.append({
             'date': new_key,
             'amt': all_data[new_key]['amt'],
