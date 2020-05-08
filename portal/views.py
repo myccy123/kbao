@@ -34,6 +34,7 @@ def sign_up(request):
     email = body.get('email', '')
     vailate_id = body.get('vid', '')
     vailate_str = body.get('vstr', '')
+    referer = request.GET.get('proxy', '')
 
     try:
         v = ValidateImg.objects.get(id=vailate_id)
@@ -50,6 +51,7 @@ def sign_up(request):
         UserInfo.objects.create(user_id=user_id,
                                 tel=tel,
                                 email=email,
+                                reference=referer,
                                 qq=qq)
         return success()
 
@@ -532,6 +534,7 @@ def get_user_info(request):
         def_addr = AddressInfo.objects.get(addr_type='send',
                                            is_default='1')
         res_data['defaultAddr'] = serialize(def_addr)
+        res_data['url'] = f'http://8.129.22.111/portal/sign/up/?proxy={user_info.reference}'
     except AddressInfo.DoesNotExist:
         pass
 

@@ -28,6 +28,7 @@ class UserInfo(BaseModel):
     ROLE_TYPE = (
         ('custom', '普通会员'),
         ('admin', '管理员'),
+        ('proxy', '代理商'),
     )
 
     user_id = models.CharField(max_length=50, blank=True)
