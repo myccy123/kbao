@@ -11,7 +11,7 @@ from utils.jsonutil import loads
 from utils.dateutil import *
 from utils.excelutil import *
 from utils.express_util import resend_package, send_package
-from common.response import success, serialize
+from common.response import success, error, serialize
 from portal.models import *
 
 
@@ -82,11 +82,11 @@ def user_list(request):
                                     user_id__contains=user_id).order_by(
         '-create_date')
     res = dict()
-    p = Paginator(serialize(users), page_size)
+    p = Paginator(users, page_size)
     res['total'] = p.count
     res['pageSize'] = page_size
     res['pageNum'] = page
-    res['data'] = p.page(page).object_list
+    res['data'] = serialize(p.page(page).object_list)
     return success(res)
 
 
@@ -117,13 +117,30 @@ def charge_list(request):
         charges = charges.filter(amt__lt=flow_max_amt)
 
     res = dict()
-    p = Paginator(serialize(charges), page_size)
+    p = Paginator(charges, page_size)
     res['total'] = p.count
     res['pageSize'] = page_size
     res['pageNum'] = page
-    res['data'] = p.page(page).object_list
+    res['data'] = serialize(p.page(page).object_list)
     return success(res)
 
+@http_log()
+@need_login()
+def order_get(request):
+    body = loads(request.body)
+    order_id = body.get('orderId', '')
+    consumes = None;
+    if order_id != '':
+        consumes = ConsumeInfo.objects.filter(order_id=order_id)
+
+    res = dict()
+    try:
+        res['total'] = 0 if consumes is None else consumes.count()
+        res['data'] = serialize(consumes)
+    except:
+        res['total'] = 0
+        res['data'] = []
+    return success(res)
 
 @http_log()
 @need_login()
@@ -151,7 +168,7 @@ def order_list(request):
     page_size = int(body.get('pageSize', 10))
     page = body.get('page', 1)
     consumes = ConsumeInfo.objects.filter(user_id__contains=user_id).order_by(
-        '-create_date')
+        '-update_date')
     if order_id != '':
         consumes = consumes.filter(order_id=order_id)
     if tid != '':
@@ -169,11 +186,11 @@ def order_list(request):
             print_date__lt=print_end_date)
     res = dict()
     try:
-        p = Paginator(serialize(consumes), page_size)
+        p = Paginator(consumes, page_size)
         res['total'] = p.count
         res['pageSize'] = page_size
         res['pageNum'] = page
-        res['data'] = p.page(page).object_list
+        res['data'] = serialize(p.page(page).object_list)
     except:
         res['total'] = 0
         res['pageSize'] = page_size
@@ -238,6 +255,33 @@ def export_order_list(request):
 
     return success({'excel_url': f'/data/excel/{request.user.username}.xlsx'})
 
+@http_log()
+@need_login()
+def export_resend_detail(request):
+    body = loads(request.body)
+    order_ids = body.get('orderIds', '')
+    rows = []
+
+    if order_ids != '':
+        order_id_arry = order_ids.split(',')
+        consumes = ConsumeInfo.objects.filter(order_id__in=order_id_arry).order_by(
+            '-update_date')
+        for i, c in enumerate(consumes):
+            row = [i + 1, c.user_id, c.ec_id, c.order_id, c.goods_name, c.receive_prov,
+                   c.receive_city, c.receive_county,
+                   c.receive_addr, c.receiver, c.receiver_tel,
+                   format_datetime(c.create_date, "%Y-%m-%d %H:%M:%S")]
+            rows.append(row)
+
+    headers = ['序号', '账号', '淘宝订单号', '运单号', '包裹类型', '收件省份', '收件城市', '收件地区', '收件详细地址',
+               '收件人姓名',
+               '收件人电话', '创建时间']
+
+
+    write_excel(f'/root/kbao/data/excel/{request.user.username}.xlsx', rows,
+                headers)
+
+    return success({'excel_url': f'/data/excel/{request.user.username}.xlsx'})
 
 @http_log()
 @need_login()
@@ -273,34 +317,52 @@ def order_verify(request):
 def order_resend(request):
     body = loads(request.body)
     infos = []
-    for c in ConsumeInfo.objects.filter(id__in=body.get('id')):
-        info = {
-            'tid': c.ec_id,
-            'order_id': c.order_id,
-            'goods_name': c.goods_name,
-            'send_city': c.send_city,
-            'send_addr': c.send_addr,
-            'send_county': c.send_county,
-            'send_prov': c.send_prov,
-            'send_tel': c.sender_tel,
-            'send_name': c.sender,
-            'recv_city': c.receive_city,
-            'recv_addr': c.receive_addr,
-            'recv_county': c.receive_county,
-            'recv_prov': c.receive_prov,
-            'recv_tel': c.receiver_tel,
-            'recv_name': c.receiver,
-        }
-        infos.append(info)
-        res = resend_package(infos)
-        if res['status'] == '00':
-            status = 'pending'
-            if res['is_printed']:
-                status = 'done'
-                c.print_date = res.get('print_date')
-            c.status = status
-            c.save()
-    return success()
+    resend_length= 0
+    consume = None
+    if body.get('id', '') != '':
+        consume = ConsumeInfo.objects.filter(id__in=body.get('id'))
+    elif body.get('orderId', '') != '':
+        consume = ConsumeInfo.objects.filter(order_id=body.get('orderId'))
+
+    if consume is not None :
+        for c in consume:
+            if c is None:
+                continue
+            info = {
+                'tid': c.ec_id,
+                'order_id': c.order_id,
+                'goods_name': c.goods_name,
+                'send_city': c.send_city,
+                'send_addr': c.send_addr,
+                'send_county': c.send_county,
+                'send_prov': c.send_prov,
+                'send_tel': c.sender_tel,
+                'send_name': c.sender,
+                'recv_city': c.receive_city,
+                'recv_addr': c.receive_addr,
+                'recv_county': c.receive_county,
+                'recv_prov': c.receive_prov,
+                'recv_tel': c.receiver_tel,
+                'recv_name': c.receiver,
+            }
+            infos.append(info)
+            res = resend_package(infos)
+            if res['status'] == '00':
+                resend_length = 1
+                status = 'pending'
+                if res['is_printed']:
+                    status = 'done'
+                    c.print_date = res.get('print_date')
+                if c.status != 'done':
+                    c.status = status
+                    c.task_id = res['task_id']
+                c.resend_num = 1 if c.resend_num is None else c.resend_num+1
+                c.save()
+
+    if resend_length>0:
+        return success({'resend': '1'})
+
+    return success({'resend': '0'})
 
 
 @http_log()
@@ -525,7 +587,7 @@ def sum_day_all(request):
             now_date_str, {}).get('income', None)
         now_date = tmp_day
     res_data = []
-    for new_key in sorted(all_data):
+    for new_key in sorted(all_data, reverse=True):
         res_data.append({
             'date': new_key,
             'amt': all_data[new_key]['amt'],
@@ -598,7 +660,7 @@ def sum_month_all(request):
             now_date_str, {}).get('income', None)
         now_date = tmp_day
     res_data = []
-    for new_key in sorted(all_data):
+    for new_key in sorted(all_data, reverse=True):
         res_data.append({
             'date': new_key,
             'amt': all_data[new_key]['amt'],
@@ -723,6 +785,28 @@ def sum_day_user(request):
         GROUP BY 1,2,3,4,5 '''
     res_data = []
     db = MySQL.connect('8.129.22.111', 'root', 'yujiahao', 3306, 'kbao')
+
+    countbalsql =  f'''
+        select SUM(bal) FROM portal_userinfo
+    '''
+    for row in db.select(countbalsql, True):
+        res_data.append({
+            'userId': '所有用户余额汇总',
+            'qq': '',
+            'email': '',
+            'signDate': '',
+            'yesterday_cnt': '',
+            'cnt': '',
+            'diff_cnt': '',
+            'yesterday_income': '',
+            'income': '',
+            'diff_income': '',
+            'month_income': '',
+            'month_cnt': '',
+            'bal': row[0],
+            'loginDate': '',
+        })
+
     for row in db.select(sql):
         res_data.append({
             'userId': row[0],
@@ -747,4 +831,14 @@ def sum_day_user(request):
 @http_log()
 def kuaibao_callback(request):
     body = loads(request.body)
+    return success()
+
+@http_log()
+def ali_callback(request):
+    print("支付宝扫码支付")
+    method_param = getattr(request, request.method)
+    print("支付金额",method_param['buyer_pay_amount'])
+    print("支付状态", method_param['trade_status'])
+    print("订单号",method_param['out_trade_no'])
+
     return success()

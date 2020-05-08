@@ -19,6 +19,7 @@ from .views import *
 urlpatterns = [
     url(r'^charge/list/', charge_list),
     url(r'^order/list/', order_list),
+    url(r'^order/get/', order_get),
     url(r'^export/orders/', export_order_list),
     url(r'^update/user/', udpate_user_info),
     url(r'^update/history/', update_history),
@@ -27,6 +28,7 @@ urlpatterns = [
     url(r'^order/verify/', order_verify),
     url(r'^order/resend/', order_resend),
     url(r'^order/send/', order_send),
+    url(r'^order/resendDetailExport/', export_resend_detail),
     url(r'^express/save/', express_save),
     url(r'^express/list/', express_list),
     url(r'^express/delete/', express_delete),
@@ -42,4 +44,5 @@ urlpatterns = [
     url(r'^bi/all/month/', sum_month_all),
     url(r'^bi/user/day/', sum_day_user),
     url(r'^kuaibao/callback/', kuaibao_callback),
+    url(r'^ali/callback/', ali_callback),
 ]

@@ -37,5 +37,7 @@ urlpatterns = [
     url(r'^set/default/express/', set_default_express),
     url(r'^code/info/', get_code_info),
     url(r'^refresh/vailate/', refresh_vailate_img),
+    url(r'^charge/pay/', charge_pay),
+    url(r'^charge/check_pay/', check_pay),
 ]
 

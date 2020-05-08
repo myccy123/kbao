@@ -146,3 +146,8 @@ STATICFILES_DIRS = (
     os.path.join(BASE_DIR, r'static'),
     MEDIA_ROOT,
 )
+
+ALIPAY_APPID = "2016101700708942"
+ALIPAY_URL = "https://openapi.alipaydev.com/gateway.do"
+RETURN_URL = "http://8.129.22.111/#/home/userRechargePay"
+NOTICE_URL = "http://8.129.22.111/kf/ali/callback/"
