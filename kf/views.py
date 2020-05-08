@@ -785,6 +785,28 @@ def sum_day_user(request):
         GROUP BY 1,2,3,4,5 '''
     res_data = []
     db = MySQL.connect('8.129.22.111', 'root', 'yujiahao', 3306, 'kbao')
+
+    countbalsql =  f'''
+        select SUM(bal) FROM portal_userinfo
+    '''
+    for row in db.select(countbalsql, True):
+        res_data.append({
+            'userId': '所有用户余额汇总',
+            'qq': '',
+            'email': '',
+            'signDate': '',
+            'yesterday_cnt': '',
+            'cnt': '',
+            'diff_cnt': '',
+            'yesterday_income': '',
+            'income': '',
+            'diff_income': '',
+            'month_income': '',
+            'month_cnt': '',
+            'bal': row[0],
+            'loginDate': '',
+        })
+
     for row in db.select(sql):
         res_data.append({
             'userId': row[0],
