@@ -647,6 +647,7 @@ def charge_pay(request):
     url = ali_url.get('alipay_url') + "?" + order_string
 
     return success({"code": 0, "message": "请求支付成功", "url": url})
+
 @http_log()
 def check_pay(request):
     # 创建用于进行支付宝支付的工具对象
