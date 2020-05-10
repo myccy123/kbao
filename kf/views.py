@@ -124,6 +124,7 @@ def charge_list(request):
     res['data'] = serialize(p.page(page).object_list)
     return success(res)
 
+
 @http_log()
 @need_login()
 def order_get(request):
@@ -141,6 +142,7 @@ def order_get(request):
         res['total'] = 0
         res['data'] = []
     return success(res)
+
 
 @http_log()
 @need_login()
@@ -245,7 +247,7 @@ def export_order_list(request):
                '收件人电话', '快递品牌', '创建时间', '打印时间']
     rows = []
     for i, c in enumerate(consumes):
-        row = [i + 1 ,c.user_id, c.ec_id, c.order_id, c.goods_name, c.receive_prov,
+        row = [i + 1, c.user_id, c.ec_id, c.order_id, c.goods_name, c.receive_prov,
                c.receive_city, c.receive_county,
                c.receive_addr, c.receiver, c.receiver_tel, c.express_name,
                format_datetime(c.create_date, "%Y-%m-%d %H:%M:%S"), format_datetime(c.print_date, "%Y-%m-%d %H:%M:%S")]
@@ -254,6 +256,7 @@ def export_order_list(request):
                 headers)
 
     return success({'excel_url': f'/data/excel/{request.user.username}.xlsx'})
+
 
 @http_log()
 @need_login()
@@ -277,11 +280,11 @@ def export_resend_detail(request):
                '收件人姓名',
                '收件人电话', '创建时间']
 
-
     write_excel(f'/root/kbao/data/excel/{request.user.username}.xlsx', rows,
                 headers)
 
     return success({'excel_url': f'/data/excel/{request.user.username}.xlsx'})
+
 
 @http_log()
 @need_login()
@@ -317,14 +320,14 @@ def order_verify(request):
 def order_resend(request):
     body = loads(request.body)
     infos = []
-    resend_length= 0
+    resend_length = 0
     consume = None
     if body.get('id', '') != '':
         consume = ConsumeInfo.objects.filter(id__in=body.get('id'))
     elif body.get('orderId', '') != '':
         consume = ConsumeInfo.objects.filter(order_id=body.get('orderId'))
 
-    if consume is not None :
+    if consume is not None:
         for c in consume:
             if c is None:
                 continue
@@ -356,10 +359,10 @@ def order_resend(request):
                 if c.status != 'done':
                     c.status = status
                     c.task_id = res['task_id']
-                c.resend_num = 1 if c.resend_num is None else c.resend_num+1
+                c.resend_num = 1 if c.resend_num is None else c.resend_num + 1
                 c.save()
 
-    if resend_length>0:
+    if resend_length > 0:
         return success({'resend': '1'})
 
     return success({'resend': '0'})
@@ -786,7 +789,7 @@ def sum_day_user(request):
     res_data = []
     db = MySQL.connect('8.129.22.111', 'root', 'yujiahao', 3306, 'kbao')
 
-    countbalsql =  f'''
+    countbalsql = f'''
         select SUM(bal) FROM portal_userinfo
     '''
     for row in db.select(countbalsql, True):
@@ -833,12 +836,40 @@ def kuaibao_callback(request):
     body = loads(request.body)
     return success()
 
+
 @http_log()
 def ali_callback(request):
     print("支付宝扫码支付")
     method_param = getattr(request, request.method)
-    print("支付金额",method_param['buyer_pay_amount'])
+    print("支付金额", method_param['buyer_pay_amount'])
     print("支付状态", method_param['trade_status'])
-    print("订单号",method_param['out_trade_no'])
+    print("订单号", method_param['out_trade_no'])
 
     return success()
+
+
+@http_log()
+@need_login()
+def add_proxy(request):
+    body = loads(request.body)
+    user_id = body.get('userid', '')
+    password = body.get('passWord', '')
+    tel = body.get('tel', '')
+    qq = body.get('qq', '')
+    email = body.get('email', '')
+
+    try:
+        User.objects.get(username=user_id)
+        return error('01', '用户名已存在！')
+    except User.DoesNotExist:
+        User.objects.create_user(user_id, '', password)
+        UserInfo.objects.create(user_id=user_id,
+                                role='proxy',
+                                tel=tel,
+                                email=email,
+                                qq=qq)
+        return success()
+
+
+
+
