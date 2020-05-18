@@ -34,6 +34,7 @@ urlpatterns = [
     url(r'^address/delete/', address_delete),
     url(r'^upload/orders/', upload_orders),
     url(r'^set/default/address/', set_default_address),
+    url(r'^add/send/org/', add_send_org),
     url(r'^set/default/express/', set_default_express),
     url(r'^code/info/', get_code_info),
     url(r'^refresh/vailate/', refresh_vailate_img),

@@ -131,6 +131,7 @@ class AddressInfo(BaseModel):
     county = models.CharField(max_length=50, blank=True)
     tel = models.CharField(max_length=50, blank=True)
     postid = models.CharField(max_length=50, blank=True)
+    org_name = models.CharField(max_length=50, blank=True)
     is_default = models.CharField(max_length=50, blank=True, default='0')
 
 

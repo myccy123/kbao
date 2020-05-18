@@ -552,6 +552,36 @@ def set_default_address(request):
 
 @http_log()
 @need_login()
+def add_send_org(request):
+    body = loads(request.body)
+    try:
+        addr = AddressInfo.objects.get(addr_type='send',
+                                       name=body.get('sender', ''),
+                                       address=body.get('sendAddress', ''),
+                                       prov=body.get('sendProv', ''),
+                                       city=body.get('sendCity', ''),
+                                       county=body.get('sendCounty', ''),
+                                       tel=body.get('sendTel', ''),
+                                       org_name=body.get('orgName', ''),
+                                       postid=body.get('sendPostid', ''))
+
+    except AddressInfo.DoesNotExist:
+        AddressInfo.objects.all().update(is_default='0')
+        AddressInfo.objects.create(addr_type='send',
+                                   name=body.get('sender', ''),
+                                   address=body.get('sendAddress', ''),
+                                   prov=body.get('sendProv', ''),
+                                   city=body.get('sendCity', ''),
+                                   county=body.get('sendCounty', ''),
+                                   tel=body.get('sendTel', ''),
+                                   org_name=body.get('orgName', ''),
+                                   postid=body.get('sendPostid', ''))
+
+    return success()
+
+
+@http_log()
+@need_login()
 def set_default_express(request):
     body = loads(request.body)
     user = UserInfo.objects.get(user_id=request.user.username)

@@ -21,5 +21,6 @@ urlpatterns = [
     url(r'^member/list/', member_list),
     url(r'^summ/day/', sum_day_user),
     url(r'^summ/month/', sum_month_user),
+    url(r'^list/', proxy_list),
 ]
 
