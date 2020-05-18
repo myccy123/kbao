@@ -24,7 +24,7 @@ urlpatterns = [
     url('admin/', admin.site.urls),
     url(r'^portal/', include('portal.urls')),
     url(r'^kf/', include('kf.urls')),
-    url(r'^kf/', include('proxy.urls')),
+    url(r'^proxy/', include('proxy.urls')),
     url(r'^$', index),
 ]
 
