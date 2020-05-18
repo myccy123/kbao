@@ -404,8 +404,9 @@ def order_send(request):
         user = UserInfo.objects.select_for_update().get(user_id=c.user_id)
         user.bal = float(user.bal) - float(c.amt)
         user.save()
-
-    return success(serialize(c))
+        return success(serialize(c))
+    else:
+        return error(msg=order_res.get('message'))
 
 
 @http_log()

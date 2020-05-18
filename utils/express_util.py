@@ -245,7 +245,7 @@ def address_clean(addr):
 
 def parse_address(addr):
     df = cpca.transform([addr], cut=False)
-    if df['区'][0] == '':
+    if df['区'][0] == '' and df['市'][0] != '':
         return {
             'prov': df['省'][0],
             'city': df['市'][0],
