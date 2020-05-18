@@ -5,7 +5,7 @@
       <paths name="39.98.242.160">
         <serverdata>
           <mappings>
-            <mapping local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/kbao" local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>

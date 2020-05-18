@@ -11,20 +11,18 @@ from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.db import transaction
 
-
 from common.decorations import http_log, need_login
 from utils.dbutil import MySQL
 from utils.excelutil import read_excel, write_excel
 from utils.jsonutil import loads
 from utils.dateutil import *
-from utils.express_util import send_package, parse_address,address_clean
+from utils.express_util import send_package, parse_address, address_clean
 from utils.redisutil import MyRedis
 from common.response import success, error, serialize
 from portal.models import *
 from utils.randomutil import get_random
 from utils.kbalipay.kb_alipay_util import kb_alipay
 from decimal import Decimal
-
 
 
 # Create your views here.
@@ -54,6 +52,7 @@ def sign_up(request):
         UserInfo.objects.create(user_id=user_id,
                                 tel=tel,
                                 email=email,
+                                reference=body.get('proxy', ''),
                                 qq=qq)
         return success()
 
@@ -168,7 +167,7 @@ def place_order(request):
 
     # 收件人区县错误，重新解析
     if order_res.get('status') == '01' and order_res.get('code') == 9009:
-        clean_addr = address_clean(body.get('receiver', '')+body.get('receiveAddr', ''))
+        clean_addr = address_clean(body.get('receiver', '') + body.get('receiveAddr', ''))
         if clean_addr.get('status') == '00':
             recv_addr = clean_addr
             order_info['recv_city'] = recv_addr.get('city', '')
@@ -176,7 +175,6 @@ def place_order(request):
             order_info['recv_county'] = recv_addr.get('county', '')
             order_info['recv_prov'] = recv_addr.get('prov', '')
             order_res = send_package(order_info)
-
 
     if order_res.get('status') == '00' and order_res.get('waybill_code') is not None:
         order_id = order_res.get('waybill_code')
@@ -206,8 +204,8 @@ def place_order(request):
                                      status=status,
                                      amt=body.get('amt'),
                                      cost=body.get('cost'),
-                                     batch=body.get('batch',''),
-                                     idx=body.get('idx',''),
+                                     batch=body.get('batch', ''),
+                                     idx=body.get('idx', ''),
                                      print_date=print_date,
                                      task_id=task_id)
 
@@ -291,7 +289,8 @@ def export_order_list(request):
     rows = []
     for i, c in enumerate(consumes):
         row = [i + 1, c.ec_id, c.order_id, c.goods_name, c.receive_prov, c.receive_city, c.receive_county,
-               c.receive_addr, c.receiver, c.receiver_tel, express_map[c.express_type], format_datetime(c.create_date, "%Y-%m-%d %H:%M:%S")]
+               c.receive_addr, c.receiver, c.receiver_tel, express_map[c.express_type],
+               format_datetime(c.create_date, "%Y-%m-%d %H:%M:%S")]
         rows.append(row)
     write_excel(f'/root/kbao/data/excel/{request.user.username}.xlsx', rows, headers)
 
@@ -377,7 +376,6 @@ def all_flow(request):
         if flow_max_amt != -1:
             where += f" and amt < '{flow_max_amt}'"
 
-
         sql = f'''
                 SELECT * FROM(
                 SELECT 'order',amt,'',`status`,create_date FROM portal_consumeinfo 
@@ -387,7 +385,7 @@ def all_flow(request):
                 {where}
                 ) c 
             '''
-        sqlpage = sql+f" ORDER BY c.create_date DESC LIMIT {(page-1)*page_size},{page_size}"
+        sqlpage = sql + f" ORDER BY c.create_date DESC LIMIT {(page - 1) * page_size},{page_size}"
         sqlCount = f'''
                     SELECT count(*) FROM(
                     SELECT 'order',amt,'',`status`,create_date FROM portal_consumeinfo 
@@ -413,6 +411,7 @@ def all_flow(request):
         res['data'] = res_data
 
     return success(res)
+
 
 @http_log()
 @need_login()
@@ -448,7 +447,7 @@ def export_flow_list(request):
             express_map[row[0]] = row[1]
 
         headers = ['类型', '淘宝订单号', '运单号', '包裹类型', '收件省份', '收件城市', '收件地区', '收件详细地址', '收件人姓名',
-                   '收件人电话', '快递品牌', '创建时间','金额']
+                   '收件人电话', '快递品牌', '创建时间', '金额']
         rows = []
         total_amt = 0
         for i, c in enumerate(consumes):
@@ -458,9 +457,9 @@ def export_flow_list(request):
             rows.append(row)
             total_amt += Decimal(c.amt)
         if total_amt != 0:
-            rows.append(['', '','','','', '','',
-                       '', '', '','',
-                       '', '总计：'+str(total_amt)])
+            rows.append(['', '', '', '', '', '', '',
+                         '', '', '', '',
+                         '', '总计：' + str(total_amt)])
         write_excel(f'/root/kbao/data/excel/{request.user.username}.xlsx', rows, headers)
 
         return success({'excel_url': f'/data/excel/{request.user.username}.xlsx'})
@@ -486,13 +485,13 @@ def export_flow_list(request):
                 'orderStatus': '',
                 'charge_date': c.create_date,
             })
-        charge_status = {'pending': '待审核', 'done': '已到账','reject': '已拒绝'}
+        charge_status = {'pending': '待审核', 'done': '已到账', 'reject': '已拒绝'}
 
         headers = ['类型', '金额', '状态', '创建时间']
         rows = []
         total_amt = 0
         for i, c in enumerate(charges):
-            row = ['充值', c.amt, charge_status[c.status],format_datetime(c.create_date, "%Y-%m-%d %H:%M:%S")]
+            row = ['充值', c.amt, charge_status[c.status], format_datetime(c.create_date, "%Y-%m-%d %H:%M:%S")]
             rows.append(row)
             total_amt += Decimal(c.amt)
         if total_amt != 0:
@@ -500,7 +499,6 @@ def export_flow_list(request):
         write_excel(f'/root/kbao/data/excel/{request.user.username}.xlsx', rows, headers)
 
         return success({'excel_url': f'/data/excel/{request.user.username}.xlsx'})
-
 
 
 @http_log()
@@ -647,7 +645,8 @@ def upload_orders(request):
     xls_data = read_excel(xls.excel.path, skiprow=1, min_col=5)
     res_data = []
     for row in xls_data:
-        if str(row[0]).strip() == '' and str(row[1]).strip() == '' and str(row[2]).strip() == '' and str(row[3]).strip()== '':
+        if str(row[0]).strip() == '' and str(row[1]).strip() == '' and str(row[2]).strip() == '' and str(
+                row[3]).strip() == '':
             continue
         res_data.append({
             'tid': row[4],
@@ -658,14 +657,15 @@ def upload_orders(request):
         })
     return success(res_data)
 
+
 @http_log()
 def charge_pay(request):
     body = loads(request.body)
     amount = body["amount"]
     userid = body["userid"]
     # 创建用于进行支付宝支付的工具对象
-    ali_url,alipay = kb_alipay()
-    order_id = userid+format_datetime(now(), YYYYMMDDHHMMSS)
+    ali_url, alipay = kb_alipay()
+    order_id = userid + format_datetime(now(), YYYYMMDDHHMMSS)
     # 电脑网站支付，需要跳转到https://openapi.kbalipay.com/gateway.do? + order_string
     order_string = alipay.api_alipay_trade_page_pay(
         out_trade_no=order_id,
@@ -680,12 +680,13 @@ def charge_pay(request):
 
     return success({"code": 0, "message": "请求支付成功", "url": url})
 
+
 @http_log()
 def check_pay(request):
     # 创建用于进行支付宝支付的工具对象
     body = loads(request.body)
     order_id = body["order_id"]
-    ali_url,alipay = kb_alipay()
+    ali_url, alipay = kb_alipay()
     request_time = 0
     while True:
         # 调用alipay工具查询支付结果
@@ -714,6 +715,7 @@ def check_pay(request):
             # 支付失败
             # 返回支付失败的通知
             return success({"code": code, "message": trade_status})
+
 
 def index(request):
     return render(request, 'kbao/index.html')

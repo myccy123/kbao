@@ -172,6 +172,7 @@ class ValidateImg(BaseModel):
 class PublicNotice(BaseModel):
 
     content = models.CharField(max_length=2000, blank=True)
+    speak_to = models.CharField(max_length=100, blank=True)
     end_date = models.DateTimeField(null=True)
 
 
