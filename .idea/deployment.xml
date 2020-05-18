@@ -1,7 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="8.129.22.111">
+  <component name="PublishConfigData" autoUpload="Always" serverName="39.98.242.160" showAutoUploadSettingsWarning="false">
     <serverData>
+      <paths name="39.98.242.160">
+        <serverdata>
+          <mappings>
+            <mapping local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
       <paths name="8.129.22.111">
         <serverdata>
           <mappings>
