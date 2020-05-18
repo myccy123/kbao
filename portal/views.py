@@ -530,6 +530,7 @@ def set_default_address(request):
                                        city=body.get('sendCity', ''),
                                        county=body.get('sendCounty', ''),
                                        tel=body.get('sendTel', ''),
+                                       org_name=body.get('orgName', ''),
                                        postid=body.get('sendPostid', ''))
         AddressInfo.objects.all().update(is_default='0')
         addr.is_default = '1'
@@ -544,6 +545,7 @@ def set_default_address(request):
                                    city=body.get('sendCity', ''),
                                    county=body.get('sendCounty', ''),
                                    tel=body.get('sendTel', ''),
+                                   org_name=body.get('orgName', ''),
                                    postid=body.get('sendPostid', ''),
                                    is_default='1')
 
