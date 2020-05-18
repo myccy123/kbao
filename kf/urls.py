@@ -45,4 +45,5 @@ urlpatterns = [
     url(r'^bi/user/day/', sum_day_user),
     url(r'^kuaibao/callback/', kuaibao_callback),
     url(r'^ali/callback/', ali_callback),
+    url(r'^add/proxy/', add_proxy),
 ]
