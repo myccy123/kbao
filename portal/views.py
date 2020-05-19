@@ -36,6 +36,7 @@ def sign_up(request):
     email = body.get('email', '')
     vailate_id = body.get('vid', '')
     vailate_str = body.get('vstr', '')
+    proxy_id = body.get('proxy', '')
 
     try:
         v = ValidateImg.objects.get(id=vailate_id)
@@ -48,11 +49,16 @@ def sign_up(request):
         User.objects.get(username=user_id)
         return error('01', '用户名已存在！')
     except User.DoesNotExist:
+        if proxy_id != '':
+            try:
+                UserInfo.objects.get(user_id=proxy_id, role='proxy')
+            except UserInfo.DoesNotExist:
+                proxy_id = ''
         User.objects.create_user(user_id, '', password)
         UserInfo.objects.create(user_id=user_id,
                                 tel=tel,
                                 email=email,
-                                reference=body.get('proxy', ''),
+                                reference=proxy_id,
                                 qq=qq)
         return success()
 
@@ -182,6 +188,12 @@ def place_order(request):
         task_id = order_res.get('task_id')
         status = 'done' if order_res.get('is_printed') else 'pending'
 
+    user = UserInfo.objects.get(user_id=request.user.username)
+    proxy_share = 0
+    if user.reference != '':
+        proxy = UserInfo.objects.get(user_id=user.reference)
+        proxy_share = proxy.price
+
     res = ConsumeInfo.objects.create(user_id=request.user.username,
                                      express_type=body.get('expressType', ''),
                                      ec_id=tid,
@@ -204,6 +216,7 @@ def place_order(request):
                                      status=status,
                                      amt=body.get('amt'),
                                      cost=body.get('cost'),
+                                     proxy_share=proxy_share,
                                      batch=body.get('batch', ''),
                                      idx=body.get('idx', ''),
                                      print_date=print_date,

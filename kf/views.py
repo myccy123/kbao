@@ -860,6 +860,7 @@ def add_proxy(request):
     tel = body.get('tel', '')
     qq = body.get('qq', '')
     email = body.get('email', '')
+    price = body.get('price', '')
 
     try:
         User.objects.get(username=user_id)
@@ -870,6 +871,7 @@ def add_proxy(request):
                                 role='proxy',
                                 tel=tel,
                                 email=email,
+                                price=price,
                                 qq=qq)
         return success()
 
