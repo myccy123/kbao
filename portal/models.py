@@ -95,6 +95,7 @@ class ConsumeInfo(BaseModel):
     receiver_tel = models.CharField(max_length=50, blank=True)
     amt = models.DecimalField(max_digits=16, decimal_places=2, default=0)
     cost = models.DecimalField(max_digits=16, decimal_places=2, default=0)
+    proxy_share = models.DecimalField(max_digits=16, decimal_places=2, default=0)
     status = models.CharField(max_length=50, choices=CONSUME_STATUS, default='pending')
     batch = models.CharField(max_length=50, blank=True)
     idx = models.IntegerField(default=0)
@@ -131,6 +132,7 @@ class AddressInfo(BaseModel):
     county = models.CharField(max_length=50, blank=True)
     tel = models.CharField(max_length=50, blank=True)
     postid = models.CharField(max_length=50, blank=True)
+    org_name = models.CharField(max_length=50, blank=True)
     is_default = models.CharField(max_length=50, blank=True, default='0')
 
 
@@ -171,6 +173,7 @@ class ValidateImg(BaseModel):
 class PublicNotice(BaseModel):
 
     content = models.CharField(max_length=2000, blank=True)
+    speak_to = models.CharField(max_length=100, blank=True)
     end_date = models.DateTimeField(null=True)
 
 

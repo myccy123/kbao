@@ -17,6 +17,10 @@ from django.conf.urls import url
 from .views import *
 
 urlpatterns = [
-    url(r'^sign/up/', sign_up),
+    url(r'^order/list/', order_list),
+    url(r'^member/list/', member_list),
+    url(r'^summ/day/', sum_day_user),
+    url(r'^summ/month/', sum_month_user),
+    url(r'^list/', proxy_list),
 ]
 

@@ -12,7 +12,7 @@ class MyRedis:
 
     @classmethod
     def connect(cls, host='127.0.0.1', port=6379, password='kb1234@1234'):
-        cli = redis.Redis(host=host, port=int(port), password=password, decode_responses=True)
+        cli = redis.Redis(host=host, port=int(port), password=None, decode_responses=True)
         return cls(cli)
 
     def incr(self, key, amount=1, limit=None):

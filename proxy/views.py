@@ -63,151 +63,74 @@ def member_list(request):
 @need_login()
 def sum_day_user(request):
     body = loads(request.body)
-    signup_date = body.get('signUpDate')
-    user_id = body.get('userId', '')
-    qq = body.get('qq', '')
-    email = body.get('email', '')
+    date = body.get('date')
+    db = MySQL.connect('39.98.242.160', 'root', 'yujiahao', 3306, 'kbao')
     where = ''
-    if signup_date[0] != '':
-        where += f" and b.create_date >= '{signup_date[0]}'"
-    if signup_date[1] != '':
-        where += f" and b.create_date <= '{signup_date[1]}'"
-    if user_id != '':
-        where += f" and b.user_id = '{user_id}'"
-    if qq != '':
-        where += f" and b.qq = '{qq}'"
-    if email != '':
-        where += f" and b.email = '{email}'"
+    if date[0] != '':
+        where += f" and create_date >= '{date[0]}'"
+    if date[1] != '':
+        where += f" and create_date <= '{date[1]}'"
     sql = f'''
-        SELECT 
-          b.user_id,
-          b.qq,
-          b.email,
-          DATE_FORMAT(b.create_date, '%Y-%m-%d'),
-          DATE_FORMAT(c.last_login, '%Y-%m-%d %H:%i'),
-          SUM(
-            CASE
-              WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(
-                DATE_ADD(CURDATE(), INTERVAL - 1 DAY),
-                '%Y-%m-%d'
-              ) 
-              THEN 1 
-              ELSE 0 
-            END
-          ),
-          SUM(
-            CASE
-              WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(CURDATE(), '%Y-%m-%d') 
-              THEN 1 
-              ELSE 0 
-            END
-          ),
-          SUM(
-            CASE
-              WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(CURDATE(), '%Y-%m-%d') 
-              THEN 1 
-              ELSE 0 
-            END
-          ) - SUM(
-            CASE
-              WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(
-                DATE_ADD(CURDATE(), INTERVAL - 1 DAY),
-                '%Y-%m-%d'
-              ) 
-              THEN 1 
-              ELSE 0 
-            END
-          ),
-          SUM(
-            CASE
-              WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(
-                DATE_ADD(CURDATE(), INTERVAL - 1 DAY),
-                '%Y-%m-%d'
-              ) 
-              THEN (a.amt - a.cost) 
-              ELSE 0 
-            END
-          ),
-          SUM(
-            CASE
-              WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(CURDATE(), '%Y-%m-%d') 
-              THEN (a.amt - a.cost) 
-              ELSE 0 
-            END
-          ),
-          SUM(
-            CASE
-              WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(CURDATE(), '%Y-%m-%d') 
-              THEN (a.amt - a.cost) 
-              ELSE 0 
-            END
-          ) - SUM(
-            CASE
-              WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(
-                DATE_ADD(CURDATE(), INTERVAL - 1 DAY),
-                '%Y-%m-%d'
-              ) 
-              THEN (a.amt - a.cost) 
-              ELSE 0 
-            END
-          ),
-          SUM(IFNULL(a.amt,0)) - SUM(IFNULL(a.cost,0)),
-          SUM(CASE WHEN a.id IS NOT NULL THEN 1 ELSE 0 END),
-          AVG(b.bal)
-        FROM
-          portal_userinfo b 
-          LEFT JOIN auth_user c 
-            ON b.user_id=c.username
-          LEFT JOIN portal_consumeinfo a
-            ON a.user_id = b.user_id
-            and a.status <> 'fail'
-            AND a.create_date >= DATE_ADD(
-            CURDATE(),
-            INTERVAL - DAY(CURDATE()) + 1 DAY
-          ) 
-        WHERE 1=1 b.reference='{request.user.username}'
-        {where}
-        GROUP BY 1,2,3,4,5 '''
-    res_data = []
-    db = MySQL.connect('8.129.22.111', 'root', 'yujiahao', 3306, 'kbao')
-
-    countbalsql = f'''
-        select SUM(bal) FROM portal_userinfo where reference='{request.user.username}'
-    '''
-    for row in db.select(countbalsql, True):
-        res_data.append({
-            'userId': '所有用户余额汇总',
-            'qq': '',
-            'email': '',
-            'signDate': '',
-            'yesterday_cnt': '',
-            'cnt': '',
-            'diff_cnt': '',
-            'yesterday_income': '',
-            'income': '',
-            'diff_income': '',
-            'month_income': '',
-            'month_cnt': '',
-            'bal': row[0],
-            'loginDate': '',
-        })
-
+            select date_format(a.create_date, '%Y-%m-%d') as dt,sum(amt),sum(cost),count(1)
+            from portal_consumeinfo a
+            left join portal_userinfo b
+            on a.user_id = b.user_id
+            and b.userid is not null
+            and b.reference = '{request.user.username}'
+            where status <> 'fail'
+            {where}
+            group by dt
+            order by dt desc
+        '''
+    all_data = dict()
     for row in db.select(sql):
+        all_data[row[0]] = {
+            'amt': row[1],
+            'cost': row[2],
+            'income': row[1] - row[2],
+            'cnt': row[3],
+        }
+
+    try:
+        bgn_date = parse_datetime(min(all_data.keys()), '%Y-%m-%d')
+        end_date = parse_datetime(max(all_data.keys()), '%Y-%m-%d')
+    except ValueError:
+        bgn_date = now()
+        end_date = now()
+    c = end_date - bgn_date
+    now_date = bgn_date
+
+    for i in range(c.days):
+        tmp_day = add_days(now_date, 1)
+        tmp_day_str = format_datetime(tmp_day, '%Y-%m-%d')
+        now_date_str = format_datetime(now_date, '%Y-%m-%d')
+        if tmp_day_str > format_datetime(end_date, '%Y-%m-%d'):
+            break
+
+        if tmp_day_str not in all_data.keys():
+            all_data[tmp_day_str] = {
+                'amt': 0,
+                'cost': 0,
+                'income': 0,
+                'cnt': 0,
+            }
+        all_data[tmp_day_str]['diff_cnt'] = all_data[tmp_day_str][
+                                                'cnt'] - all_data.get(
+            now_date_str, {}).get('cnt', None)
+        all_data[tmp_day_str]['diff_income'] = all_data[tmp_day_str][
+                                                   'income'] - all_data.get(
+            now_date_str, {}).get('income', None)
+        now_date = tmp_day
+    res_data = []
+    for new_key in sorted(all_data, reverse=True):
         res_data.append({
-            'userId': row[0],
-            'qq': row[1],
-            'email': row[2],
-            'signDate': row[3],
-            'yesterday_cnt': row[5],
-            'cnt': row[6],
-            'diff_cnt': row[7],
-            'yesterday_income': row[8],
-            'income': row[9],
-            'diff_income': row[10],
-            'month_income': row[11],
-            'month_cnt': row[12],
-            'bal': row[13],
-            'loginDate': row[4],
+            'date': new_key,
+            'amt': all_data[new_key]['amt'],
+            'cost': all_data[new_key]['cost'],
+            'income': all_data[new_key]['income'],
+            'cnt': all_data[new_key]['cnt'],
+            'diff_cnt': all_data[new_key].get('diff_cnt', '--'),
+            'diff_income': all_data[new_key].get('diff_income', '--'),
         })
 
     return success(res_data)
@@ -218,7 +141,7 @@ def sum_day_user(request):
 def sum_month_user(request):
     body = loads(request.body)
     date = body.get('date')
-    db = MySQL.connect('8.129.22.111', 'root', 'yujiahao', 3306, 'kbao')
+    db = MySQL.connect('39.98.242.160', 'root', 'yujiahao', 3306, 'kbao')
     where = ''
     if date[0] != '':
         where += f" and create_date >= '{date[0]}'"
@@ -284,3 +207,14 @@ def sum_month_user(request):
         })
 
     return success(res_data)
+
+
+@http_log()
+@need_login()
+def proxy_list(request):
+    body = loads(request.body)
+    proxy_id = body.get('proxyId', '')
+    users = UserInfo.objects.filter(role='proxy').order_by('-create_date')
+    if proxy_id != '':
+        users = users.filter(reference=proxy_id)
+    return success(serialize(users))

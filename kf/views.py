@@ -510,7 +510,7 @@ def notice_list(request):
 @need_login()
 def add_notice(request):
     body = loads(request.body)
-    PublicNotice.objects.create(content=body.get('content'))
+    PublicNotice.objects.create(content=body.get('content'), speak_to=body.get('speakTo', 'public'))
     return success()
 
 
@@ -520,6 +520,8 @@ def update_notice(request):
     body = loads(request.body)
     n = PublicNotice.objects.get(id=body.get('id'))
     n.content = body.get('content', '')
+    if body.get('speakTo', '') != '':
+        n.speak_to = body.get('speakTo')
     n.save()
     return success()
 
@@ -858,6 +860,7 @@ def add_proxy(request):
     tel = body.get('tel', '')
     qq = body.get('qq', '')
     email = body.get('email', '')
+    price = body.get('price', '')
 
     try:
         User.objects.get(username=user_id)
@@ -868,9 +871,16 @@ def add_proxy(request):
                                 role='proxy',
                                 tel=tel,
                                 email=email,
+                                price=price,
                                 qq=qq)
         return success()
 
 
-
-
+@http_log()
+@need_login()
+def check_charge(request):
+    cs = ChargeInfo.objects.filter(status='pending', create_date__gt=add_minutes(now(), -5))
+    if len(cs) > 0:
+        return success({'hasCharge': True})
+    else:
+        return success({'hasCharge': False})
