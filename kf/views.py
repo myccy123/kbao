@@ -539,7 +539,7 @@ def delete_notice(request):
 def sum_day_all(request):
     body = loads(request.body)
     date = body.get('date')
-    db = MySQL.connect('8.129.22.111', 'root', 'yujiahao', 3306, 'kbao')
+    db = MySQL.connect('127.0.0.1', 'root', 'yujiahao', 3306, 'kbao')
     where = ''
     if date[0] != '':
         where += f" and create_date >= '{date[0]}'"
@@ -612,7 +612,7 @@ def sum_day_all(request):
 def sum_month_all(request):
     body = loads(request.body)
     date = body.get('date')
-    db = MySQL.connect('8.129.22.111', 'root', 'yujiahao', 3306, 'kbao')
+    db = MySQL.connect('127.0.0.1', 'root', 'yujiahao', 3306, 'kbao')
     where = ''
     if date[0] != '':
         where += f" and create_date >= '{date[0]}'"
@@ -790,7 +790,7 @@ def sum_day_user(request):
         {where}
         GROUP BY 1,2,3,4,5 '''
     res_data = []
-    db = MySQL.connect('8.129.22.111', 'root', 'yujiahao', 3306, 'kbao')
+    db = MySQL.connect('127.0.0.1', 'root', 'yujiahao', 3306, 'kbao')
 
     countbalsql = f'''
         select SUM(bal) FROM portal_userinfo
