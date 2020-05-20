@@ -389,7 +389,7 @@ def all_flow(request):
         if flow_max_amt != -1:
             where += f" and amt < '{flow_max_amt}'"
 
-        sql = f'''
+        sqlpage = f'''
                 SELECT * FROM(
                 SELECT 'order',amt,'',`status`,create_date FROM portal_consumeinfo 
                 {where}
@@ -397,18 +397,8 @@ def all_flow(request):
                 SELECT charge_type,amt,`status`,'',create_date FROM portal_chargeinfo
                 {where}
                 ) c 
+                ORDER BY c.create_date DESC LIMIT {(page - 1) * page_size},{page_size}
             '''
-        sqlpage = sql + f" ORDER BY c.create_date DESC LIMIT {(page - 1) * page_size},{page_size}"
-        sqlCount = f'''
-                    SELECT count(*) FROM(
-                    SELECT 'order',amt,'',`status`,create_date FROM portal_consumeinfo 
-                    {where}
-                    UNION
-                    SELECT charge_type,amt,`status`,'',create_date FROM portal_chargeinfo
-                    {where}
-                    ) c
-                    '''
-        all_data = dict()
         for row in db.select(sqlpage, True):
             res_data.append({
                 'chart_type': row[0],
@@ -418,7 +408,7 @@ def all_flow(request):
                 'charge_date': row[4],
             })
         res = dict()
-        res['total'] = db.count(sql)
+        res['total'] = db.count(sqlpage)
         res['pageSize'] = page_size
         res['pageNum'] = page
         res['data'] = res_data
