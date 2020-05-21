@@ -349,7 +349,7 @@ def order_resend(request):
                 'recv_name': c.receiver,
             }
             infos.append(info)
-            res = resend_package(infos)
+            res = resend_package(infos, body.get('agentId', '6510003625864851'))
             if res['status'] == '00':
                 resend_length = 1
                 status = 'pending'
@@ -374,6 +374,12 @@ def order_resend(request):
 def order_send(request):
     body = loads(request.body)
     c = ConsumeInfo.objects.get(id=body.get('id'))
+    agent_id = '6510003625864851'
+    try:
+        addr = AddressInfo.objects.get(id=c.send_id)
+        agent_id = addr.agent_id
+    except AddressInfo.DoesNotExist:
+        pass
     order_info = {
         'tid': c.ec_id,
         'goods_name': c.goods_name,
@@ -390,7 +396,7 @@ def order_send(request):
         'recv_tel': c.receiver_tel,
         'recv_name': c.receiver,
     }
-    order_res = send_package(order_info)
+    order_res = send_package(order_info, agent_id)
     if order_res.get('status') == '00' and order_res.get(
             'waybill_code') is not None:
         order_id = order_res.get('waybill_code')
@@ -539,7 +545,7 @@ def delete_notice(request):
 def sum_day_all(request):
     body = loads(request.body)
     date = body.get('date')
-    db = MySQL.connect('8.129.22.111', 'root', 'yujiahao', 3306, 'kbao')
+    db = MySQL.connect()
     where = ''
     if date[0] != '':
         where += f" and create_date >= '{date[0]}'"
@@ -612,7 +618,7 @@ def sum_day_all(request):
 def sum_month_all(request):
     body = loads(request.body)
     date = body.get('date')
-    db = MySQL.connect('8.129.22.111', 'root', 'yujiahao', 3306, 'kbao')
+    db = MySQL.connect()
     where = ''
     if date[0] != '':
         where += f" and create_date >= '{date[0]}'"
@@ -790,7 +796,7 @@ def sum_day_user(request):
         {where}
         GROUP BY 1,2,3,4,5 '''
     res_data = []
-    db = MySQL.connect('8.129.22.111', 'root', 'yujiahao', 3306, 'kbao')
+    db = MySQL.connect()
 
     countbalsql = f'''
         select SUM(bal) FROM portal_userinfo

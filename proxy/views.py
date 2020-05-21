@@ -64,19 +64,25 @@ def member_list(request):
 def sum_day_user(request):
     body = loads(request.body)
     date = body.get('date')
+    send = body.get('id', '')
     db = MySQL.connect('39.98.242.160', 'root', 'yujiahao', 3306, 'kbao')
     where = ''
     if date[0] != '':
         where += f" and create_date >= '{date[0]}'"
     if date[1] != '':
         where += f" and create_date <= '{date[1]}'"
+    if send != '':
+        where += f" and send_id = '{send}'"
     sql = f'''
-            select date_format(a.create_date, '%Y-%m-%d') as dt,sum(amt),sum(cost),count(1)
+            select date_format(a.create_date, '%Y-%m-%d') as dt, sum(amt),sum(cost),count(1)
             from portal_consumeinfo a
             left join portal_userinfo b
             on a.user_id = b.user_id
             and b.userid is not null
             and b.reference = '{request.user.username}'
+            left join portal_addressinfo c
+            and a.send_id = c.id
+            and c.id is not null
             where status <> 'fail'
             {where}
             group by dt
@@ -141,15 +147,21 @@ def sum_day_user(request):
 def sum_month_user(request):
     body = loads(request.body)
     date = body.get('date')
+    send = body.get('id', '')
     db = MySQL.connect('39.98.242.160', 'root', 'yujiahao', 3306, 'kbao')
     where = ''
     if date[0] != '':
         where += f" and create_date >= '{date[0]}'"
     if date[1] != '':
         where += f" and create_date <= '{date[1]}'"
+    if send != '':
+        where += f" and send_id = '{send}'"
     sql = f'''
                select date_format(a.create_date, '%Y-%m') as dt,sum(amt),sum(cost),count(1)
                from portal_consumeinfo a
+               left join portal_addressinfo c
+               and a.send_id = c.id
+               and c.id is not null
                where status <> 'fail' and a.reference={request.user.username}
                {where}
                group by dt
