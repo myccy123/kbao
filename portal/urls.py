@@ -40,5 +40,6 @@ urlpatterns = [
     url(r'^refresh/vailate/', refresh_vailate_img),
     url(r'^charge/pay/', charge_pay),
     url(r'^charge/check_pay/', check_pay),
+    url(r'^sendMsg/', send_msg),
 ]
 

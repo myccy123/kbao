@@ -142,7 +142,6 @@ def place_order(request):
     body = loads(request.body)
     order_id = ''
     tid = body.get('tid', '')
-    send_id = body.get('sendId')
     if tid == '' or tid == 'null':
         cli = MyRedis.connect('127.0.0.1')
         tid = cli.incr('ecId', limit=99)
@@ -170,7 +169,7 @@ def place_order(request):
     status = 'fail'
     print_date = None
     task_id = ''
-    order_res = send_package(order_info, body.get('agentId'))
+    order_res = send_package(order_info)
 
     # 收件人区县错误，重新解析
     if order_res.get('status') == '01' and order_res.get('code') == 9009:
@@ -181,7 +180,7 @@ def place_order(request):
             order_info['recv_addr'] = recv_addr.get('addr', '')
             order_info['recv_county'] = recv_addr.get('county', '')
             order_info['recv_prov'] = recv_addr.get('prov', '')
-            order_res = send_package(order_info, body.get('agentId'))
+            order_res = send_package(order_info)
 
     if order_res.get('status') == '00' and order_res.get('waybill_code') is not None:
         order_id = order_res.get('waybill_code')
@@ -200,7 +199,6 @@ def place_order(request):
                                      ec_id=tid,
                                      order_id=order_id,
                                      goods_name=body.get('goodsName', ''),
-                                     send_id=body.get('sendId', ''),
                                      send_addr=body.get('sendAddr', ''),
                                      send_prov=body.get('sendProv', ''),
                                      send_city=body.get('sendCity', ''),
@@ -265,10 +263,6 @@ def order_list(request):
     res['pageSize'] = page_size
     res['pageNum'] = page
     res['data'] = serialize(p.page(page).object_list)
-
-    for dt in res['data']:
-        addr = AddressInfo.objects.get(id=dt['send_id'])
-        dt['org_name'] = addr.org_name
 
     return success(res)
 
@@ -384,7 +378,7 @@ def all_flow(request):
         res['pageNum'] = page
         res['data'] = p.page(page).object_list
     else:
-        db = MySQL.connect()
+        db = MySQL.connect('8.129.22.111', 'root', 'yujiahao', 3306, 'kbao')
         where = f"where user_id='{request.user.username}'"
         if bgn_date is not None and bgn_date != '':
             where += f" and a.create_date >= '{bgn_date}'"
@@ -538,8 +532,6 @@ def set_default_address(request):
                                        county=body.get('sendCounty', ''),
                                        tel=body.get('sendTel', ''),
                                        org_name=body.get('orgName', ''),
-                                       agent_id=body.get('agentId', ''),
-                                       agent_name=body.get('agentName', ''),
                                        postid=body.get('sendPostid', ''))
         AddressInfo.objects.all().update(is_default='0')
         addr.is_default = '1'
@@ -555,8 +547,6 @@ def set_default_address(request):
                                    county=body.get('sendCounty', ''),
                                    tel=body.get('sendTel', ''),
                                    org_name=body.get('orgName', ''),
-                                   agent_id=body.get('agentId', ''),
-                                   agent_name=body.get('agentName', ''),
                                    postid=body.get('sendPostid', ''),
                                    is_default='1')
 
@@ -576,8 +566,6 @@ def add_send_org(request):
                                        county=body.get('sendCounty', ''),
                                        tel=body.get('sendTel', ''),
                                        org_name=body.get('orgName', ''),
-                                       agent_id=body.get('agentId', ''),
-                                       agent_name=body.get('agentName', ''),
                                        postid=body.get('sendPostid', ''))
 
     except AddressInfo.DoesNotExist:
@@ -590,8 +578,6 @@ def add_send_org(request):
                                    county=body.get('sendCounty', ''),
                                    tel=body.get('sendTel', ''),
                                    org_name=body.get('orgName', ''),
-                                   agent_id=body.get('agentId', ''),
-                                   agent_name=body.get('agentName', ''),
                                    postid=body.get('sendPostid', ''))
 
     return success()

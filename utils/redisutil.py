@@ -26,11 +26,22 @@ class MyRedis:
         self.cli.close()
         return val
 
-    def set(self, key, value):
+    def set(self, key, value, expire=None):
         self.cli.set(key, value)
+        if expire is not None:
+            self.cli.set(key, expire)
         self.cli.close()
 
-    def get(self, key, value):
+    def get(self, key):
         val = self.cli.get(key)
+        self.cli.close()
+        return val
+
+    def hset(self, name, key, value):
+        self.cli.hset(key, name, value)
+        self.cli.close()
+
+    def hget(self, name, key):
+        val = self.cli.hget(name, key)
         self.cli.close()
         return val
