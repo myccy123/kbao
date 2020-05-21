@@ -266,6 +266,10 @@ def order_list(request):
     res['pageNum'] = page
     res['data'] = serialize(p.page(page).object_list)
 
+    for dt in res['data']:
+        addr = AddressInfo.objects.get(id=dt['send_id'])
+        dt['org_name'] = addr.org_name
+
     return success(res)
 
 

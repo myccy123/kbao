@@ -58,7 +58,7 @@ def get_req_status(res, tid=None, agent_id=None):
             if jsn[0][1]['status'] == 'success':
                 task_id = jsn[0][1]['task_id']
                 waybill_code = jsn[0][1]['task_info']['waybill_code']
-                is_printed, print_date = get_print_res(task_id, agent_id)
+                is_printed, print_date = get_print_res(task_id, agent_id=agent_id)
                 return {
                     'status': '00',
                     'waybill_code': waybill_code,
@@ -78,7 +78,7 @@ def get_req_status(res, tid=None, agent_id=None):
             jsn = res.json()
             if jsn['code'] == 0:
                 task_id = list(jsn['data'].items())[0][1]['task_id']
-                is_printed, print_date = get_print_res(task_id)
+                is_printed, print_date = get_print_res(task_id, agent_id=agent_id)
                 return {
                     'status': '00',
                     'is_printed': is_printed,

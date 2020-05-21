@@ -76,11 +76,15 @@ def update_history(request):
 def user_list(request):
     body = loads(request.body)
     user_id = body.get('userId', '')
+    proxy_id = body.get('proxyId', '')
     page_size = int(body.get('pageSize', 10))
     page = body.get('page', 1)
     users = UserInfo.objects.filter(role='custom',
                                     user_id__contains=user_id).order_by(
         '-create_date')
+
+    if proxy_id != '':
+        users = users.filter(reference=proxy_id)
     res = dict()
     p = Paginator(users, page_size)
     res['total'] = p.count
@@ -193,7 +197,11 @@ def order_list(request):
         res['pageSize'] = page_size
         res['pageNum'] = page
         res['data'] = serialize(p.page(page).object_list)
-    except:
+        for dt in res['data']:
+            addr = AddressInfo.objects.get(id=dt['send_id'])
+            dt['org_name'] = addr.org_name
+    except Exception as e:
+        print(e)
         res['total'] = 0
         res['pageSize'] = page_size
         res['pageNum'] = 0
@@ -323,44 +331,43 @@ def order_resend(request):
     resend_length = 0
     consume = None
     if body.get('id', '') != '':
-        consume = ConsumeInfo.objects.filter(id__in=body.get('id'))
+        consume = ConsumeInfo.objects.get(id=body.get('id'))
     elif body.get('orderId', '') != '':
-        consume = ConsumeInfo.objects.filter(order_id=body.get('orderId'))
+        consume = ConsumeInfo.objects.get(order_id=body.get('orderId'))
 
     if consume is not None:
-        for c in consume:
-            if c is None:
-                continue
-            info = {
-                'tid': c.ec_id,
-                'order_id': c.order_id,
-                'goods_name': c.goods_name,
-                'send_city': c.send_city,
-                'send_addr': c.send_addr,
-                'send_county': c.send_county,
-                'send_prov': c.send_prov,
-                'send_tel': c.sender_tel,
-                'send_name': c.sender,
-                'recv_city': c.receive_city,
-                'recv_addr': c.receive_addr,
-                'recv_county': c.receive_county,
-                'recv_prov': c.receive_prov,
-                'recv_tel': c.receiver_tel,
-                'recv_name': c.receiver,
-            }
-            infos.append(info)
-            res = resend_package(infos, body.get('agentId', '6510003625864851'))
-            if res['status'] == '00':
-                resend_length = 1
-                status = 'pending'
-                if res['is_printed']:
-                    status = 'done'
-                    c.print_date = res.get('print_date')
-                if c.status != 'done':
-                    c.status = status
-                    c.task_id = res['task_id']
-                c.resend_num = 1 if c.resend_num is None else c.resend_num + 1
-                c.save()
+        c = consume
+        info = {
+            'tid': c.ec_id,
+            'order_id': c.order_id,
+            'goods_name': c.goods_name,
+            'send_city': c.send_city,
+            'send_addr': c.send_addr,
+            'send_county': c.send_county,
+            'send_prov': c.send_prov,
+            'send_tel': c.sender_tel,
+            'send_name': c.sender,
+            'recv_city': c.receive_city,
+            'recv_addr': c.receive_addr,
+            'recv_county': c.receive_county,
+            'recv_prov': c.receive_prov,
+            'recv_tel': c.receiver_tel,
+            'recv_name': c.receiver,
+        }
+        infos.append(info)
+        addr = AddressInfo.objects.get(id=c.send_id)
+        res = resend_package(infos, addr.agent_id)
+        if res['status'] == '00':
+            resend_length = 1
+            status = 'pending'
+            if res['is_printed']:
+                status = 'done'
+                c.print_date = res.get('print_date')
+            if c.status != 'done':
+                c.status = status
+                c.task_id = res['task_id']
+            c.resend_num = 1 if c.resend_num is None else c.resend_num + 1
+            c.save()
 
     if resend_length > 0:
         return success({'resend': '1'})
@@ -545,15 +552,26 @@ def delete_notice(request):
 def sum_day_all(request):
     body = loads(request.body)
     date = body.get('date')
+    send_id = body.get('id', '')
+    proxy_id = body.get('proxyId', '')
     db = MySQL.connect()
     where = ''
     if date[0] != '':
-        where += f" and create_date >= '{date[0]}'"
+        where += f" and a.create_date >= '{date[0]}'"
     if date[1] != '':
-        where += f" and create_date <= '{date[1]}'"
+        where += f" and a.create_date <= '{date[1]}'"
+    if proxy_id != '':
+        where += f" and b.reference = '{proxy_id}'"
+    if send_id != '':
+        where += f" and c.id = '{send_id}'"
     sql = f'''
-        select date_format(a.create_date, '%Y-%m-%d') as dt,sum(amt),sum(cost),count(1)
+        select date_format(a.create_date, '%Y-%m-%d') as dt,sum(a.amt),sum(a.cost),count(1)
         from portal_consumeinfo a
+        left join portal_userinfo b
+        on a.user_id = b.user_id
+        left join portal_addressinfo c
+        on a.send_id = c.id
+        and c.id is not null
         where status <> 'fail'
         {where}
         group by dt
@@ -618,15 +636,26 @@ def sum_day_all(request):
 def sum_month_all(request):
     body = loads(request.body)
     date = body.get('date')
+    send_id = body.get('id', '')
+    proxy_id = body.get('proxyId', '')
     db = MySQL.connect()
     where = ''
     if date[0] != '':
-        where += f" and create_date >= '{date[0]}'"
+        where += f" and a.create_date >= '{date[0]}'"
     if date[1] != '':
-        where += f" and create_date <= '{date[1]}'"
+        where += f" and a.create_date <= '{date[1]}'"
+    if proxy_id != '':
+        where += f" and b.reference = '{proxy_id}'"
+    if send_id != '':
+        where += f" and c.id = '{send_id}'"
     sql = f'''
-           select date_format(a.create_date, '%Y-%m') as dt,sum(amt),sum(cost),count(1)
+           select date_format(a.create_date, '%Y-%m') as dt,sum(a.amt),sum(a.cost),count(1)
            from portal_consumeinfo a
+           left join portal_userinfo b
+           on a.user_id = b.user_id
+           left join portal_addressinfo c
+           on a.send_id = c.id
+           and c.id is not null
            where status <> 'fail'
            {where}
            group by dt
@@ -694,6 +723,8 @@ def sum_day_user(request):
     user_id = body.get('userId', '')
     qq = body.get('qq', '')
     email = body.get('email', '')
+    send_id = body.get('id', '')
+    proxy_id = body.get('proxyId', '')
     where = ''
     if signup_date[0] != '':
         where += f" and b.create_date >= '{signup_date[0]}'"
@@ -705,6 +736,10 @@ def sum_day_user(request):
         where += f" and b.qq = '{qq}'"
     if email != '':
         where += f" and b.email = '{email}'"
+    if proxy_id != '':
+        where += f" and b.reference = '{proxy_id}'"
+    if send_id != '':
+        where += f" and c.id = '{send_id}'"
     sql = f'''
         SELECT 
           b.user_id,
@@ -792,6 +827,9 @@ def sum_day_user(request):
             CURDATE(),
             INTERVAL - DAY(CURDATE()) + 1 DAY
           ) 
+          LEFT JOIN portal_addressinfo c
+           on a.send_id = c.id
+           and c.id is not null
         WHERE 1=1
         {where}
         GROUP BY 1,2,3,4,5 '''
