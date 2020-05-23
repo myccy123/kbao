@@ -79,6 +79,7 @@ class ConsumeInfo(BaseModel):
     goods_name = models.CharField(max_length=50, blank=True)
     express_type = models.CharField(max_length=50, blank=True)
     express_name = models.CharField(max_length=50, blank=True)
+    send_id = models.CharField(max_length=50, blank=True)
     send_addr = models.CharField(max_length=50, blank=True)
     send_prov = models.CharField(max_length=50, blank=True)
     send_city = models.CharField(max_length=50, blank=True)
@@ -133,6 +134,8 @@ class AddressInfo(BaseModel):
     tel = models.CharField(max_length=50, blank=True)
     postid = models.CharField(max_length=50, blank=True)
     org_name = models.CharField(max_length=50, blank=True)
+    agent_id = models.CharField(max_length=50, blank=True)
+    agent_name = models.CharField(max_length=50, blank=True)
     is_default = models.CharField(max_length=50, blank=True, default='0')
 
 

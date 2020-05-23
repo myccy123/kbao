@@ -23,14 +23,14 @@ def get_app(method='cloud.print.do'):
 
 
 # 402打印机秘钥8449041339824670
-def get_print_res(task_id, sleep_time=3):
+def get_print_res(task_id, sleep_time=3, agent_id=None):
     print(f'task_id({task_id})推迟2s执行调用快宝云API...')
     time.sleep(sleep_time)
     body = get_app()
     body['data'] = loads(f'''
             {{		
                 "action": "get.task.info",
-                "agent_id": "6510003625864851",
+                "agent_id": "{agent_id}",
                 "task_id": "{task_id}"
             }}
         ''')
@@ -47,7 +47,7 @@ def get_print_res(task_id, sleep_time=3):
     return False, None
 
 
-def get_req_status(res, tid=None):
+def get_req_status(res, tid=None, agent_id=None):
     if int(res.status_code) == 200:
         print(f'tid({tid})已调用快宝云API...')
         print(dumps(res.json()))
@@ -58,7 +58,7 @@ def get_req_status(res, tid=None):
             if jsn[0][1]['status'] == 'success':
                 task_id = jsn[0][1]['task_id']
                 waybill_code = jsn[0][1]['task_info']['waybill_code']
-                is_printed, print_date = get_print_res(task_id)
+                is_printed, print_date = get_print_res(task_id, agent_id=agent_id)
                 return {
                     'status': '00',
                     'waybill_code': waybill_code,
@@ -78,7 +78,7 @@ def get_req_status(res, tid=None):
             jsn = res.json()
             if jsn['code'] == 0:
                 task_id = list(jsn['data'].items())[0][1]['task_id']
-                is_printed, print_date = get_print_res(task_id)
+                is_printed, print_date = get_print_res(task_id, agent_id=agent_id)
                 return {
                     'status': '00',
                     'is_printed': is_printed,
@@ -96,24 +96,24 @@ def get_req_status(res, tid=None):
         return {'status': '01', 'message': '请求失败！'}
 
 
-def send_req(body, tid=None):
+def send_req(body, tid=None, agent_id=None):
     headers = {
         'content-type': "application/x-www-form-urlencoded",
     }
     res = requests.post('https://kop.kuaidihelp.com/api', headers=headers, data=body)
-    return get_req_status(res, tid)
+    return get_req_status(res, tid, agent_id=agent_id)
 
 
-def send_package(info):
+def send_package(info, agent_id):
     body = get_app()
-    body['data'] = loads('''
-        {		
+    body['data'] = loads(f'''
+        {{		
             "action": "print.json.cn",
-            "agent_id": "6510003625864851",
+            "agent_id": "{agent_id}",
             "print_type": "3",
             "batch": "true",
             "print_data": []
-        }
+        }}
     ''')
     body['data']['print_data'].append(loads(f'''
         {{
@@ -154,19 +154,19 @@ def send_package(info):
         }}
     '''))
     body['data'] = dumps(body['data'])
-    return send_req(body, info['tid'])
+    return send_req(body, info['tid'], agent_id=agent_id)
 
 
-def resend_package(infos):
+def resend_package(infos, agent_id):
     body = get_app()
-    body['data'] = loads('''
-            {		
+    body['data'] = loads(f'''
+            {{		
                 "action": "print.json.cn",
-                "agent_id": "6510003625864851",
+                "agent_id": "{agent_id}",
                 "print_type": "3",
                 "batch": "true",
                 "print_data": []
-            }
+            }}
         ''')
     for info in infos:
         body['data']['print_data'].append(loads(f'''
@@ -208,7 +208,7 @@ def resend_package(infos):
                 }}
             '''))
     body['data'] = dumps(body['data'])
-    return send_req(body)
+    return send_req(body, agent_id=agent_id)
 
 
 def address_clean(addr):

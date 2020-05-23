@@ -16,6 +16,7 @@ def order_list(request):
     order_status = body.get('orderStatus', '')
     order_id = body.get('orderId', '')
     tid = body.get('tid', '')
+    send_id = body.get('id', '')
     flow_date = body.get('chargeDate')
     bgn_date = None
     end_date = None
@@ -37,6 +38,8 @@ def order_list(request):
         consumes = consumes.filter(status=order_status)
     if order_id != '':
         consumes = consumes.filter(order_id=order_id)
+    if send_id != '':
+        consumes = consumes.filter(send_id=send_id)
     if tid != '':
         consumes = consumes.filter(ec_id=tid)
     if all([bgn_date, end_date]):
@@ -64,19 +67,25 @@ def member_list(request):
 def sum_day_user(request):
     body = loads(request.body)
     date = body.get('date')
+    send = body.get('id', '')
     db = MySQL.connect('39.98.242.160', 'root', 'yujiahao', 3306, 'kbao')
     where = ''
     if date[0] != '':
         where += f" and create_date >= '{date[0]}'"
     if date[1] != '':
         where += f" and create_date <= '{date[1]}'"
+    if send != '':
+        where += f" and send_id = '{send}'"
     sql = f'''
-            select date_format(a.create_date, '%Y-%m-%d') as dt,sum(amt),sum(cost),count(1)
+            select date_format(a.create_date, '%Y-%m-%d') as dt, sum(amt),sum(cost),count(1)
             from portal_consumeinfo a
             left join portal_userinfo b
             on a.user_id = b.user_id
-            and b.userid is not null
+            and b.user_id is not null
             and b.reference = '{request.user.username}'
+            left join portal_addressinfo c
+            on a.send_id = c.id
+            and c.id is not null
             where status <> 'fail'
             {where}
             group by dt
@@ -141,16 +150,26 @@ def sum_day_user(request):
 def sum_month_user(request):
     body = loads(request.body)
     date = body.get('date')
+    send = body.get('id', '')
     db = MySQL.connect('39.98.242.160', 'root', 'yujiahao', 3306, 'kbao')
     where = ''
     if date[0] != '':
         where += f" and create_date >= '{date[0]}'"
     if date[1] != '':
         where += f" and create_date <= '{date[1]}'"
+    if send != '':
+        where += f" and send_id = '{send}'"
     sql = f'''
                select date_format(a.create_date, '%Y-%m') as dt,sum(amt),sum(cost),count(1)
                from portal_consumeinfo a
-               where status <> 'fail' and a.reference={request.user.username}
+               left join portal_userinfo b
+               on a.user_id = b.user_id
+               and b.user_id is not null
+               and b.reference = '{request.user.username}'
+               left join portal_addressinfo c
+               on a.send_id = c.id
+               and c.id is not null
+               where status <> 'fail' and b.reference={request.user.username}
                {where}
                group by dt
                order by dt desc
@@ -214,7 +233,26 @@ def sum_month_user(request):
 def proxy_list(request):
     body = loads(request.body)
     proxy_id = body.get('proxyId', '')
-    users = UserInfo.objects.filter(role='proxy').order_by('-create_date')
-    if proxy_id != '':
-        users = users.filter(reference=proxy_id)
-    return success(serialize(users))
+    users = UserInfo.objects.all().order_by('-create_date')
+    proxy_bal_sum = dict()
+    proxy_data = []
+    for user in users:
+        if user.reference != '':
+            if proxy_bal_sum.get(user.reference) is None:
+                proxy_bal_sum[user.reference] = 0
+            proxy_bal_sum[user.reference] += user.bal
+
+    for user in users:
+        if user.role == 'proxy':
+            if proxy_id != '' and proxy_id != user.user_id:
+                continue
+            proxy_data.append({
+                'user_id': user.user_id,
+                'bal': user.bal,
+                'price': user.price,
+                'qq': user.qq,
+                'email': user.email,
+                'create_date': user.create_date,
+                'bal_summ': proxy_bal_sum.get(user.user_id, 0),
+            })
+    return success(proxy_data)

@@ -6,9 +6,9 @@ from datetime import datetime
 class MySQL:
     _ip = "127.0.0.1"
     _user = "root"
-    _passwd = "123456"
+    _passwd = "yujiahao"
     _port = 3306
-    _database = ""
+    _database = "kbao"
 
     def __init__(self, db):
         self.db = db
