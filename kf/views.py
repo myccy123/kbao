@@ -699,96 +699,212 @@ def sum_day_user(request):
         where += f" and b.qq = '{qq}'"
     if email != '':
         where += f" and b.email = '{email}'"
+    # sql = f'''
+    #     SELECT
+    #       b.user_id,
+    #       b.qq,
+    #       b.email,
+    #       DATE_FORMAT(b.create_date, '%Y-%m-%d'),
+    #       DATE_FORMAT(c.last_login, '%Y-%m-%d %H:%i'),
+    #       SUM(
+    #         CASE
+    #           WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(
+    #             DATE_ADD(CURDATE(), INTERVAL - 1 DAY),
+    #             '%Y-%m-%d'
+    #           )
+    #           THEN 1
+    #           ELSE 0
+    #         END
+    #       ),
+    #       SUM(
+    #         CASE
+    #           WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(CURDATE(), '%Y-%m-%d')
+    #           THEN 1
+    #           ELSE 0
+    #         END
+    #       ),
+    #       SUM(
+    #         CASE
+    #           WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(CURDATE(), '%Y-%m-%d')
+    #           THEN 1
+    #           ELSE 0
+    #         END
+    #       ) - SUM(
+    #         CASE
+    #           WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(
+    #             DATE_ADD(CURDATE(), INTERVAL - 1 DAY),
+    #             '%Y-%m-%d'
+    #           )
+    #           THEN 1
+    #           ELSE 0
+    #         END
+    #       ),
+    #       SUM(
+    #         CASE
+    #           WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(
+    #             DATE_ADD(CURDATE(), INTERVAL - 1 DAY),
+    #             '%Y-%m-%d'
+    #           )
+    #           THEN (a.amt - a.cost)
+    #           ELSE 0
+    #         END
+    #       ),
+    #       SUM(
+    #         CASE
+    #           WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(CURDATE(), '%Y-%m-%d')
+    #           THEN (a.amt - a.cost)
+    #           ELSE 0
+    #         END
+    #       ),
+    #       SUM(
+    #         CASE
+    #           WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(CURDATE(), '%Y-%m-%d')
+    #           THEN (a.amt - a.cost)
+    #           ELSE 0
+    #         END
+    #       ) - SUM(
+    #         CASE
+    #           WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(
+    #             DATE_ADD(CURDATE(), INTERVAL - 1 DAY),
+    #             '%Y-%m-%d'
+    #           )
+    #           THEN (a.amt - a.cost)
+    #           ELSE 0
+    #         END
+    #       ),
+    #       SUM(IFNULL(a.amt,0)) - SUM(IFNULL(a.cost,0)),
+    #       SUM(CASE WHEN a.id IS NOT NULL THEN 1 ELSE 0 END),
+    #       AVG(b.bal)
+    #     FROM
+    #       portal_userinfo b
+    #       LEFT JOIN auth_user c
+    #         ON b.user_id=c.username
+    #       LEFT JOIN portal_consumeinfo a
+    #         ON a.user_id = b.user_id
+    #         and a.status <> 'fail'
+    #         AND a.create_date >= DATE_ADD(
+    #         CURDATE(),
+    #         INTERVAL - DAY(CURDATE()) + 1 DAY
+    #       )
+    #     WHERE 1=1
+    #     {where}
+    #     GROUP BY 1,2,3,4,5 '''
     sql = f'''
-        SELECT 
-          b.user_id,
-          b.qq,
-          b.email,
-          DATE_FORMAT(b.create_date, '%Y-%m-%d'),
-          DATE_FORMAT(c.last_login, '%Y-%m-%d %H:%i'),
-          SUM(
-            CASE
-              WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(
-                DATE_ADD(CURDATE(), INTERVAL - 1 DAY),
-                '%Y-%m-%d'
-              ) 
-              THEN 1 
-              ELSE 0 
-            END
-          ),
-          SUM(
-            CASE
-              WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(CURDATE(), '%Y-%m-%d') 
-              THEN 1 
-              ELSE 0 
-            END
-          ),
-          SUM(
-            CASE
-              WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(CURDATE(), '%Y-%m-%d') 
-              THEN 1 
-              ELSE 0 
-            END
-          ) - SUM(
-            CASE
-              WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(
-                DATE_ADD(CURDATE(), INTERVAL - 1 DAY),
-                '%Y-%m-%d'
-              ) 
-              THEN 1 
-              ELSE 0 
-            END
-          ),
-          SUM(
-            CASE
-              WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(
-                DATE_ADD(CURDATE(), INTERVAL - 1 DAY),
-                '%Y-%m-%d'
-              ) 
-              THEN (a.amt - a.cost) 
-              ELSE 0 
-            END
-          ),
-          SUM(
-            CASE
-              WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(CURDATE(), '%Y-%m-%d') 
-              THEN (a.amt - a.cost) 
-              ELSE 0 
-            END
-          ),
-          SUM(
-            CASE
-              WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(CURDATE(), '%Y-%m-%d') 
-              THEN (a.amt - a.cost) 
-              ELSE 0 
-            END
-          ) - SUM(
-            CASE
-              WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(
-                DATE_ADD(CURDATE(), INTERVAL - 1 DAY),
-                '%Y-%m-%d'
-              ) 
-              THEN (a.amt - a.cost) 
-              ELSE 0 
-            END
-          ),
-          SUM(IFNULL(a.amt,0)) - SUM(IFNULL(a.cost,0)),
-          SUM(CASE WHEN a.id IS NOT NULL THEN 1 ELSE 0 END),
-          AVG(b.bal)
+        SELECT
+            b.user_id,
+            b.qq,
+            b.email,
+            DATE_FORMAT(b.create_date, '%Y-%m-%d'),
+            DATE_FORMAT(
+                c.last_login,
+                '%Y-%m-%d %H:%i'
+            ),
+            b.bal,
+            d.*
         FROM
-          portal_userinfo b 
-          LEFT JOIN auth_user c 
-            ON b.user_id=c.username
-          LEFT JOIN portal_consumeinfo a
-            ON a.user_id = b.user_id
-            and a.status <> 'fail'
+            portal_userinfo b
+        LEFT JOIN auth_user c ON b.user_id = c.username
+        LEFT JOIN (
+            SELECT
+                a.user_id,
+                SUM(
+                    CASE
+                    WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(
+                        DATE_ADD(CURDATE(), INTERVAL - 1 DAY),
+                        '%Y-%m-%d'
+                    ) THEN
+                        1
+                    ELSE
+                        0
+                    END
+                ) AS yesterday_cnt,
+                SUM(
+                    CASE
+                    WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(CURDATE(), '%Y-%m-%d') THEN
+                        1
+                    ELSE
+                        0
+                    END
+                ) AS cnt,
+                SUM(
+                    CASE
+                    WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(CURDATE(), '%Y-%m-%d') THEN
+                        1
+                    ELSE
+                        0
+                    END
+                ) - SUM(
+                    CASE
+                    WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(
+                        DATE_ADD(CURDATE(), INTERVAL - 1 DAY),
+                        '%Y-%m-%d'
+                    ) THEN
+                        1
+                    ELSE
+                        0
+                    END
+                ) AS diff_cnt,
+                SUM(
+                    CASE
+                    WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(
+                        DATE_ADD(CURDATE(), INTERVAL - 1 DAY),
+                        '%Y-%m-%d'
+                    ) THEN
+                        (a.amt - a.cost)
+                    ELSE
+                        0
+                    END
+                ) AS yesterday_income,
+                SUM(
+                    CASE
+                    WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(CURDATE(), '%Y-%m-%d') THEN
+                        (a.amt - a.cost)
+                    ELSE
+                        0
+                    END
+                ) AS income,
+                SUM(
+                    CASE
+                    WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(CURDATE(), '%Y-%m-%d') THEN
+                        (a.amt - a.cost)
+                    ELSE
+                        0
+                    END
+                ) - SUM(
+                    CASE
+                    WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(
+                        DATE_ADD(CURDATE(), INTERVAL - 1 DAY),
+                        '%Y-%m-%d'
+                    ) THEN
+                        (a.amt - a.cost)
+                    ELSE
+                        0
+                    END
+                ) AS diff_income,
+                SUM(IFNULL(a.amt, 0)) - SUM(IFNULL(a.cost, 0)) AS month_income,
+                SUM(
+                    CASE
+                    WHEN a.id IS NOT NULL THEN
+                        1
+                    ELSE
+                        0
+                    END
+                ) AS month_cnt
+            FROM
+                portal_consumeinfo a
+            WHERE
+                a. STATUS <> 'fail'
             AND a.create_date >= DATE_ADD(
-            CURDATE(),
-            INTERVAL - DAY(CURDATE()) + 1 DAY
-          ) 
-        WHERE 1=1
+                CURDATE(),
+                INTERVAL - DAY (CURDATE()) + 1 DAY
+            )
+            GROUP BY
+                1
+        ) d ON d.user_id = b.user_id
+        where 1=1 
         {where}
-        GROUP BY 1,2,3,4,5 '''
+    '''
+    print(sql)
     res_data = []
     db = MySQL.connect('127.0.0.1', 'root', 'yujiahao', 3306, 'kbao')
 
@@ -819,15 +935,15 @@ def sum_day_user(request):
             'qq': row[1],
             'email': row[2],
             'signDate': row[3],
-            'yesterday_cnt': row[5],
-            'cnt': row[6],
-            'diff_cnt': row[7],
-            'yesterday_income': row[8],
-            'income': row[9],
-            'diff_income': row[10],
-            'month_income': row[11],
-            'month_cnt': row[12],
-            'bal': row[13],
+            'yesterday_cnt': row[7],
+            'cnt': row[8],
+            'diff_cnt': row[9],
+            'yesterday_income': row[10],
+            'income': row[11],
+            'diff_income': row[12],
+            'month_income': row[13],
+            'month_cnt': row[14],
+            'bal': row[5],
             'loginDate': row[4],
         })
 
