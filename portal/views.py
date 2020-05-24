@@ -378,7 +378,7 @@ def all_flow(request):
         res['pageNum'] = page
         res['data'] = p.page(page).object_list
     else:
-        db = MySQL.connect('8.129.22.111', 'root', 'yujiahao', 3306, 'kbao')
+        db = MySQL.connect()
         where = f"where user_id='{request.user.username}'"
         if bgn_date is not None and bgn_date != '':
             where += f" and a.create_date >= '{bgn_date}'"

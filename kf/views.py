@@ -539,7 +539,7 @@ def delete_notice(request):
 def sum_day_all(request):
     body = loads(request.body)
     date = body.get('date')
-    db = MySQL.connect('8.129.22.111', 'root', 'yujiahao', 3306, 'kbao')
+    db = MySQL.connect()
     where = ''
     if date[0] != '':
         where += f" and create_date >= '{date[0]}'"
@@ -612,7 +612,7 @@ def sum_day_all(request):
 def sum_month_all(request):
     body = loads(request.body)
     date = body.get('date')
-    db = MySQL.connect('8.129.22.111', 'root', 'yujiahao', 3306, 'kbao')
+    db = MySQL.connect()
     where = ''
     if date[0] != '':
         where += f" and create_date >= '{date[0]}'"
@@ -678,6 +678,80 @@ def sum_month_all(request):
         })
 
     return success(res_data)
+
+
+@http_log()
+@need_login()
+def sum_proxy_day(request):
+    body = loads(request.body)
+    date = body.get('date')
+    db = MySQL.connect()
+    where = ''
+    if date[0] != '':
+        where += f" and create_date >= '{date[0]}'"
+    if date[1] != '':
+        where += f" and create_date <= '{date[1]}'"
+    sql = f'''
+               select date_format(a.create_date, '%Y-%m') as dt,sum(amt),sum(cost),count(1)
+               from portal_consumeinfo a
+               where status <> 'fail'
+               {where}
+               group by dt
+               order by dt desc
+           '''
+    all_data = dict()
+    for row in db.select(sql):
+        all_data[row[0]] = {
+            'amt': row[1],
+            'cost': row[2],
+            'income': row[1] - row[2],
+            'cnt': row[3],
+        }
+
+    try:
+        bgn_date = parse_datetime(min(all_data.keys()), '%Y-%m')
+        end_date = parse_datetime(max(all_data.keys()), '%Y-%m')
+    except ValueError:
+        bgn_date = now()
+        end_date = now()
+    c = end_date - bgn_date
+    now_date = bgn_date
+
+    for i in range(c.days):
+        tmp_day = add_months(now_date, 1)
+        tmp_day_str = format_datetime(tmp_day, '%Y-%m')
+        now_date_str = format_datetime(now_date, '%Y-%m')
+        if tmp_day_str > format_datetime(end_date, '%Y-%m'):
+            break
+
+        if tmp_day_str not in all_data.keys():
+            all_data[tmp_day_str] = {
+                'amt': 0,
+                'cost': 0,
+                'income': 0,
+                'cnt': 0,
+            }
+        all_data[tmp_day_str]['diff_cnt'] = all_data[tmp_day_str][
+                                                'cnt'] - all_data.get(
+            now_date_str, {}).get('cnt', None)
+        all_data[tmp_day_str]['diff_income'] = all_data[tmp_day_str][
+                                                   'income'] - all_data.get(
+            now_date_str, {}).get('income', None)
+        now_date = tmp_day
+    res_data = []
+    for new_key in sorted(all_data, reverse=True):
+        res_data.append({
+            'date': new_key,
+            'amt': all_data[new_key]['amt'],
+            'cost': all_data[new_key]['cost'],
+            'income': all_data[new_key]['income'],
+            'cnt': all_data[new_key]['cnt'],
+            'diff_cnt': all_data[new_key].get('diff_cnt', '--'),
+            'diff_income': all_data[new_key].get('diff_income', '--'),
+        })
+
+    return success(res_data)
+
 
 
 @http_log()
@@ -906,7 +980,7 @@ def sum_day_user(request):
     '''
     print(sql)
     res_data = []
-    db = MySQL.connect('8.129.22.111', 'root', 'yujiahao', 3306, 'kbao')
+    db = MySQL.connect()
 
     countbalsql = f'''
         select SUM(bal) FROM portal_userinfo
