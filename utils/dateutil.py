@@ -2,7 +2,10 @@ import time
 import datetime
 
 YYYYMMDDHHMMSS = "%Y%m%d%H%M%S"
+YYYY_MM_DD_HH_MM_SS = "%Y-%m-%d %H:%M:%S"
 YYYYMMDD = "%Y%m%d"
+YYYY_MM_DD = "%Y-%m-%d"
+YYYY_MM = "%Y-%m"
 HHMMSS = "%H%M%S"
 
 

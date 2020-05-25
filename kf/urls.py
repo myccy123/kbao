@@ -43,6 +43,8 @@ urlpatterns = [
     url(r'^bi/all/day/', sum_day_all),
     url(r'^bi/all/month/', sum_month_all),
     url(r'^bi/user/day/', sum_day_user),
+    url(r'^bi/proxy/day/', sum_proxy_day),
+    url(r'^bi/proxy/month/', sum_proxy_month),
     url(r'^kuaibao/callback/', kuaibao_callback),
     url(r'^ali/callback/', ali_callback),
     url(r'^add/proxy/', add_proxy),

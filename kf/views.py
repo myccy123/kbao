@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.db import transaction
 
+from common.db import select
 from common.decorations import http_log, need_login
 from utils.dbutil import MySQL
 from utils.jsonutil import loads
@@ -682,76 +683,178 @@ def sum_month_all(request):
 
 @http_log()
 @need_login()
-def sum_proxy_day(request):
+def sum_proxy_month(request):
     body = loads(request.body)
     date = body.get('date')
-    db = MySQL.connect()
+    proxy_id = body.get('proxyId', '')
+    send_id = body.get('sendId', '')
+
+    # filter process
+    proxies = [p.user_id for p in UserInfo.objects.filter(role='proxy')]
+    if proxy_id != '':
+        proxies = [proxy_id]
     where = ''
-    if date[0] != '':
-        where += f" and create_date >= '{date[0]}'"
-    if date[1] != '':
-        where += f" and create_date <= '{date[1]}'"
-    sql = f'''
-               select date_format(a.create_date, '%Y-%m') as dt,sum(amt),sum(cost),count(1)
-               from portal_consumeinfo a
-               where status <> 'fail'
-               {where}
-               group by dt
-               order by dt desc
-           '''
-    all_data = dict()
-    for row in db.select(sql):
-        all_data[row[0]] = {
-            'amt': row[1],
-            'cost': row[2],
-            'income': row[1] - row[2],
-            'cnt': row[3],
+    if send_id != '':
+        where = f'and c.id = {send_id}'
+
+    today = format_datetime(now(), YYYY_MM)
+    months = [today]
+    for i in range(1, 31):
+        dt = format_datetime(add_months(now(), -i), YYYY_MM)
+        if date[0] != '':
+            if format_datetime(parse_datetime(date[0], YYYY_MM_DD_HH_MM_SS), YYYY_MM) > dt:
+                continue
+        if date[1] != '':
+            if format_datetime(parse_datetime(date[1], YYYY_MM_DD_HH_MM_SS), YYYY_MM) < dt:
+                continue
+
+        months.append(dt)
+
+    sql = f"""
+            SELECT DATE_FORMAT(a.`create_date`, '%Y-%m'), b.`reference`, SUM(a.`amt`), SUM(a.`proxy_share`),
+            SUM(a.`cost`), count(1)
+            FROM `portal_consumeinfo` a
+            LEFT JOIN `portal_userinfo` b
+            ON a.`user_id` = b.`user_id`
+            LEFT JOIN `portal_addressinfo` c
+            ON a.send_id = c.id
+            WHERE b.`reference` <> ''
+            {where}
+            GROUP BY 1,2
+        """
+    ts = dict()
+    for row in select(sql):
+        if ts.get(row[0]) is None:
+            ts[row[0]] = dict()
+        ts[row[0]][row[1]] = {
+            'amt': row[2],
+            'proxy_share': row[3],
+            'cost': row[4],
+            'cnt': row[5],
         }
 
-    try:
-        bgn_date = parse_datetime(min(all_data.keys()), '%Y-%m')
-        end_date = parse_datetime(max(all_data.keys()), '%Y-%m')
-    except ValueError:
-        bgn_date = now()
-        end_date = now()
-    c = end_date - bgn_date
-    now_date = bgn_date
-
-    for i in range(c.days):
-        tmp_day = add_months(now_date, 1)
-        tmp_day_str = format_datetime(tmp_day, '%Y-%m')
-        now_date_str = format_datetime(now_date, '%Y-%m')
-        if tmp_day_str > format_datetime(end_date, '%Y-%m'):
-            break
-
-        if tmp_day_str not in all_data.keys():
-            all_data[tmp_day_str] = {
-                'amt': 0,
-                'cost': 0,
-                'income': 0,
-                'cnt': 0,
-            }
-        all_data[tmp_day_str]['diff_cnt'] = all_data[tmp_day_str][
-                                                'cnt'] - all_data.get(
-            now_date_str, {}).get('cnt', None)
-        all_data[tmp_day_str]['diff_income'] = all_data[tmp_day_str][
-                                                   'income'] - all_data.get(
-            now_date_str, {}).get('income', None)
-        now_date = tmp_day
     res_data = []
-    for new_key in sorted(all_data, reverse=True):
-        res_data.append({
-            'date': new_key,
-            'amt': all_data[new_key]['amt'],
-            'cost': all_data[new_key]['cost'],
-            'income': all_data[new_key]['income'],
-            'cnt': all_data[new_key]['cnt'],
-            'diff_cnt': all_data[new_key].get('diff_cnt', '--'),
-            'diff_income': all_data[new_key].get('diff_income', '--'),
-        })
+
+    for month in months:
+        for proxy in proxies:
+            pre_day = format_datetime(add_months(parse_datetime(month, YYYY_MM), -1), YYYY_MM)
+            pre_cnt = 0
+            pre_proxy_share = 0
+            try:
+                pre_cnt = ts[pre_day][proxy]['cnt']
+                pre_proxy_share = ts[pre_day][proxy]['proxy_share']
+            except KeyError:
+                pass
+
+            cnt = 0
+            amt = 0
+            cost = 0
+            proxy_share = 0
+            try:
+                cnt = ts[month][proxy]['cnt']
+                amt = ts[month][proxy]['amt']
+                cost = ts[monthmonth][proxy]['cost']
+                proxy_share = ts[month][proxy]['proxy_share']
+            except KeyError:
+                pass
+            res_data.append({
+                'cnt': cnt,
+                'diff_cnt': cnt - pre_cnt,
+                'amt': amt,
+                'cost': cost,
+                'proxy_share': proxy_share,
+                'diff_proxy_share': proxy_share - pre_proxy_share,
+            })
 
     return success(res_data)
 
+
+@http_log()
+@need_login()
+def sum_proxy_day(request):
+    body = loads(request.body)
+    date = body.get('date')
+    proxy_id = body.get('proxyId', '')
+    send_id = body.get('sendId', '')
+
+    # filter process
+    proxies = [p.user_id for p in UserInfo.objects.filter(role='proxy')]
+    if proxy_id != '':
+        proxies = [proxy_id]
+    where = ''
+    if send_id != '':
+        where = f'and c.id = {send_id}'
+
+    today = format_datetime(now(), YYYY_MM_DD)
+    days = [today]
+    for i in range(1, 31):
+        dt = format_datetime(add_days(now(), -i), YYYY_MM_DD)
+        if date[0] != '':
+            if format_datetime(parse_datetime(date[0], YYYY_MM_DD_HH_MM_SS), YYYY_MM_DD) > dt:
+                continue
+        if date[1] != '':
+            if format_datetime(parse_datetime(date[1], YYYY_MM_DD_HH_MM_SS), YYYY_MM_DD) < dt:
+                continue
+
+        days.append(dt)
+
+    sql = f"""
+            SELECT DATE_FORMAT(a.`create_date`, '%Y-%m-%d'), b.`reference`, SUM(a.`amt`), SUM(a.`proxy_share`),
+            SUM(a.`cost`), count(1)
+            FROM `portal_consumeinfo` a
+            LEFT JOIN `portal_userinfo` b
+            ON a.`user_id` = b.`user_id`
+            LEFT JOIN `portal_addressinfo` c
+            ON a.send_id = c.id
+            WHERE b.`reference` <> ''
+            {where}
+            GROUP BY 1,2
+        """
+    ts = dict()
+    for row in select(sql):
+        if ts.get(row[0]) is None:
+            ts[row[0]] = dict()
+        ts[row[0]][row[1]] = {
+            'amt': row[2],
+            'proxy_share': row[3],
+            'cost': row[4],
+            'cnt': row[5],
+        }
+
+    res_data = []
+
+    for day in days:
+        for proxy in proxies:
+            pre_day = format_datetime(add_days(parse_datetime(day, YYYY_MM_DD), -1), YYYY_MM_DD)
+            pre_cnt = 0
+            pre_proxy_share = 0
+            try:
+                pre_cnt = ts[pre_day][proxy]['cnt']
+                pre_proxy_share = ts[pre_day][proxy]['proxy_share']
+            except KeyError:
+                pass
+
+            cnt = 0
+            amt = 0
+            cost = 0
+            proxy_share = 0
+            try:
+                cnt = ts[day][proxy]['cnt']
+                amt = ts[day][proxy]['amt']
+                cost = ts[day][proxy]['cost']
+                proxy_share = ts[day][proxy]['proxy_share']
+            except KeyError:
+                pass
+            res_data.append({
+                'cnt': cnt,
+                'diff_cnt': cnt - pre_cnt,
+                'amt': amt,
+                'cost': cost,
+                'proxy_share': proxy_share,
+                'diff_proxy_share': proxy_share - pre_proxy_share,
+            })
+
+    return success(res_data)
 
 
 @http_log()
@@ -773,96 +876,6 @@ def sum_day_user(request):
         where += f" and b.qq = '{qq}'"
     if email != '':
         where += f" and b.email = '{email}'"
-    # sql = f'''
-    #     SELECT
-    #       b.user_id,
-    #       b.qq,
-    #       b.email,
-    #       DATE_FORMAT(b.create_date, '%Y-%m-%d'),
-    #       DATE_FORMAT(c.last_login, '%Y-%m-%d %H:%i'),
-    #       SUM(
-    #         CASE
-    #           WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(
-    #             DATE_ADD(CURDATE(), INTERVAL - 1 DAY),
-    #             '%Y-%m-%d'
-    #           )
-    #           THEN 1
-    #           ELSE 0
-    #         END
-    #       ),
-    #       SUM(
-    #         CASE
-    #           WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(CURDATE(), '%Y-%m-%d')
-    #           THEN 1
-    #           ELSE 0
-    #         END
-    #       ),
-    #       SUM(
-    #         CASE
-    #           WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(CURDATE(), '%Y-%m-%d')
-    #           THEN 1
-    #           ELSE 0
-    #         END
-    #       ) - SUM(
-    #         CASE
-    #           WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(
-    #             DATE_ADD(CURDATE(), INTERVAL - 1 DAY),
-    #             '%Y-%m-%d'
-    #           )
-    #           THEN 1
-    #           ELSE 0
-    #         END
-    #       ),
-    #       SUM(
-    #         CASE
-    #           WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(
-    #             DATE_ADD(CURDATE(), INTERVAL - 1 DAY),
-    #             '%Y-%m-%d'
-    #           )
-    #           THEN (a.amt - a.cost)
-    #           ELSE 0
-    #         END
-    #       ),
-    #       SUM(
-    #         CASE
-    #           WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(CURDATE(), '%Y-%m-%d')
-    #           THEN (a.amt - a.cost)
-    #           ELSE 0
-    #         END
-    #       ),
-    #       SUM(
-    #         CASE
-    #           WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(CURDATE(), '%Y-%m-%d')
-    #           THEN (a.amt - a.cost)
-    #           ELSE 0
-    #         END
-    #       ) - SUM(
-    #         CASE
-    #           WHEN DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(
-    #             DATE_ADD(CURDATE(), INTERVAL - 1 DAY),
-    #             '%Y-%m-%d'
-    #           )
-    #           THEN (a.amt - a.cost)
-    #           ELSE 0
-    #         END
-    #       ),
-    #       SUM(IFNULL(a.amt,0)) - SUM(IFNULL(a.cost,0)),
-    #       SUM(CASE WHEN a.id IS NOT NULL THEN 1 ELSE 0 END),
-    #       AVG(b.bal)
-    #     FROM
-    #       portal_userinfo b
-    #       LEFT JOIN auth_user c
-    #         ON b.user_id=c.username
-    #       LEFT JOIN portal_consumeinfo a
-    #         ON a.user_id = b.user_id
-    #         and a.status <> 'fail'
-    #         AND a.create_date >= DATE_ADD(
-    #         CURDATE(),
-    #         INTERVAL - DAY(CURDATE()) + 1 DAY
-    #       )
-    #     WHERE 1=1
-    #     {where}
-    #     GROUP BY 1,2,3,4,5 '''
     sql = f'''
         SELECT
             b.user_id,
