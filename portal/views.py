@@ -169,7 +169,7 @@ def place_order(request):
     status = 'fail'
     print_date = None
     task_id = ''
-    order_res = send_package(order_info)
+    order_res = send_package(order_info, body.get('agentId'))
 
     # 收件人区县错误，重新解析
     if order_res.get('status') == '01' and order_res.get('code') == 9009:
@@ -180,7 +180,7 @@ def place_order(request):
             order_info['recv_addr'] = recv_addr.get('addr', '')
             order_info['recv_county'] = recv_addr.get('county', '')
             order_info['recv_prov'] = recv_addr.get('prov', '')
-            order_res = send_package(order_info)
+            order_res = send_package(order_info, body.get('agentId'))
 
     if order_res.get('status') == '00' and order_res.get('waybill_code') is not None:
         order_id = order_res.get('waybill_code')
@@ -192,7 +192,7 @@ def place_order(request):
     proxy_share = 0
     if user.reference != '':
         proxy = UserInfo.objects.get(user_id=user.reference)
-        proxy_share = proxy.price
+        proxy_share = proxy.price if proxy.price > 0 else 0
 
     res = ConsumeInfo.objects.create(user_id=request.user.username,
                                      express_type=body.get('expressType', ''),
@@ -200,6 +200,7 @@ def place_order(request):
                                      order_id=order_id,
                                      goods_name=body.get('goodsName', ''),
                                      send_addr=body.get('sendAddr', ''),
+                                     send_id=body.get('sendId', ''),
                                      send_prov=body.get('sendProv', ''),
                                      send_city=body.get('sendCity', ''),
                                      send_county=body.get('sendCounty', ''),
@@ -507,7 +508,7 @@ def export_flow_list(request):
 @http_log()
 @need_login()
 def address_list(request):
-    res_data = AddressInfo.objects.all().order_by('-update_date')
+    res_data = AddressInfo.objects.filter(valid='1').order_by('-update_date')
     return success(serialize(res_data))
 
 
@@ -515,7 +516,9 @@ def address_list(request):
 @need_login()
 def address_delete(request):
     body = loads(request.body)
-    AddressInfo.objects.get(id=body.get('id')).delete()
+    addr = AddressInfo.objects.get(id=body.get('id'))
+    addr.valid = '0'
+    addr.save()
     return success()
 
 
