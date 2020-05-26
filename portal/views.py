@@ -272,6 +272,10 @@ def order_list(request):
     res['pageNum'] = page
     res['data'] = serialize(p.page(page).object_list)
 
+    for dt in res['data']:
+        addr = AddressInfo.objects.get(id=dt['send_id'])
+        dt['org_name'] = addr.org_name
+
     return success(res)
 
 
@@ -542,6 +546,8 @@ def set_default_address(request):
                                        county=body.get('sendCounty', ''),
                                        tel=body.get('sendTel', ''),
                                        org_name=body.get('orgName', ''),
+                                       agent_id=body.get('agentId', ''),
+                                       agent_name=body.get('agentName', ''),
                                        postid=body.get('sendPostid', ''))
         AddressInfo.objects.all().update(is_default='0')
         addr.is_default = '1'
@@ -557,6 +563,8 @@ def set_default_address(request):
                                    county=body.get('sendCounty', ''),
                                    tel=body.get('sendTel', ''),
                                    org_name=body.get('orgName', ''),
+                                   agent_id=body.get('agentId', ''),
+                                   agent_name=body.get('agentName', ''),
                                    postid=body.get('sendPostid', ''),
                                    is_default='1')
 
@@ -576,6 +584,8 @@ def add_send_org(request):
                                        county=body.get('sendCounty', ''),
                                        tel=body.get('sendTel', ''),
                                        org_name=body.get('orgName', ''),
+                                       agent_id=body.get('agentId', ''),
+                                       agent_name=body.get('agentName', ''),
                                        postid=body.get('sendPostid', ''))
 
     except AddressInfo.DoesNotExist:
@@ -588,7 +598,28 @@ def add_send_org(request):
                                    county=body.get('sendCounty', ''),
                                    tel=body.get('sendTel', ''),
                                    org_name=body.get('orgName', ''),
+                                   agent_id=body.get('agentId', ''),
+                                   agent_name=body.get('agentName', ''),
                                    postid=body.get('sendPostid', ''))
+
+    return success()
+
+@http_log()
+@need_login()
+def update_send_org(request):
+    body = loads(request.body)
+    addr = AddressInfo.objects.get(id=body.get('id'))
+    addr.name = body.get('sender', '')
+    addr.address =body.get('sendAddress', '')
+    addr.prov = body.get('sendProv', '')
+    addr.city = body.get('sendCity', '')
+    addr.county = body.get('sendCounty', '')
+    addr.tel = body.get('sendTel', '')
+    addr.org_name = body.get('orgName', '')
+    addr.postid = body.get('sendPostid', '')
+    addr.agent_id = body.get('agentId', ''),
+    addr.agent_name = body.get('agentName', ''),
+    addr.save()
 
     return success()
 
