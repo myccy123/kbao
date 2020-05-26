@@ -395,7 +395,7 @@ def all_flow(request):
                 SELECT 'order',amt,'',`status`,create_date FROM portal_consumeinfo 
                 {where}
                 UNION
-                SELECT charge_type,amt,`status`,'',create_date FROM portal_chargeinfo
+                SELECT charge_type,IF(order_id='',0,amt),`status`,'',create_date FROM portal_chargeinfo
                 {where}
                 ) c 
                 ORDER BY c.create_date DESC LIMIT {(page - 1) * page_size},{page_size}
@@ -651,8 +651,10 @@ def upload_orders(request):
     xls_data = read_excel(xls.excel.path, skiprow=1, min_col=5)
     res_data = []
     for row in xls_data:
-        if str(row[0]).strip() == '' and str(row[1]).strip() == '' and str(row[2]).strip() == '' and str(
-                row[3]).strip() == '':
+        if (str(row[0]).strip() == '' or row[0] is None) \
+                and (str(row[1]).strip() == '' or row[1] is None) \
+                and (str(row[2]).strip() == '' or row[2] is None) \
+                and (str(row[3]).strip() == '' or row[3] is None):
             continue
         res_data.append({
             'tid': row[4],
