@@ -77,11 +77,14 @@ def update_history(request):
 def user_list(request):
     body = loads(request.body)
     user_id = body.get('userId', '')
+    proxy_id = body.get('proxyId', '')
     page_size = int(body.get('pageSize', 10))
     page = body.get('page', 1)
     users = UserInfo.objects.filter(role='custom',
                                     user_id__contains=user_id).order_by(
         '-create_date')
+    if proxy_id != '':
+        users = users.filter(reference=proxy_id)
     res = dict()
     p = Paginator(users, page_size)
     res['total'] = p.count
@@ -531,15 +534,26 @@ def delete_notice(request):
 def sum_day_all(request):
     body = loads(request.body)
     date = body.get('date')
+    send_id = body.get('id', '')
+    proxy_id = body.get('proxyId', '')
     db = MySQL.connect()
     where = ''
     if date[0] != '':
-        where += f" and create_date >= '{date[0]}'"
+        where += f" and a.create_date >= '{date[0]}'"
     if date[1] != '':
-        where += f" and create_date <= '{date[1]}'"
+        where += f" and a.create_date <= '{date[1]}'"
+    if proxy_id != '':
+        where += f" and b.reference = '{proxy_id}'"
+    if send_id != '':
+        where += f" and c.id = '{send_id}'"
     sql = f'''
-        select date_format(a.create_date, '%Y-%m-%d') as dt,sum(amt),sum(cost),count(1)
+        select date_format(a.create_date, '%Y-%m-%d') as dt,sum(a.amt),sum(a.cost),count(1)
         from portal_consumeinfo a
+        left join portal_userinfo b
+        on a.user_id = b.user_id
+        left join portal_addressinfo c
+        on a.send_id = c.id
+        and c.id is not null
         where status <> 'fail'
         {where}
         group by dt
@@ -604,15 +618,26 @@ def sum_day_all(request):
 def sum_month_all(request):
     body = loads(request.body)
     date = body.get('date')
+    send_id = body.get('id', '')
+    proxy_id = body.get('proxyId', '')
     db = MySQL.connect()
     where = ''
     if date[0] != '':
-        where += f" and create_date >= '{date[0]}'"
+        where += f" and a.create_date >= '{date[0]}'"
     if date[1] != '':
-        where += f" and create_date <= '{date[1]}'"
+        where += f" and a.create_date <= '{date[1]}'"
+    if proxy_id != '':
+        where += f" and b.reference = '{proxy_id}'"
+    if send_id != '':
+        where += f" and c.id = '{send_id}'"
     sql = f'''
-           select date_format(a.create_date, '%Y-%m') as dt,sum(amt),sum(cost),count(1)
+           select date_format(a.create_date, '%Y-%m') as dt,sum(a.amt),sum(a.cost),count(1)
            from portal_consumeinfo a
+           left join portal_userinfo b
+           on a.user_id = b.user_id
+           left join portal_addressinfo c
+           on a.send_id = c.id
+           and c.id is not null
            where status <> 'fail'
            {where}
            group by dt
@@ -860,7 +885,10 @@ def sum_day_user(request):
     user_id = body.get('userId', '')
     qq = body.get('qq', '')
     email = body.get('email', '')
+    send_id = body.get('id', '')
+    proxy_id = body.get('proxyId', '')
     where = ''
+    innerwhere = ''
     if signup_date[0] != '':
         where += f" and b.create_date >= '{signup_date[0]}'"
     if signup_date[1] != '':
@@ -871,6 +899,10 @@ def sum_day_user(request):
         where += f" and b.qq = '{qq}'"
     if email != '':
         where += f" and b.email = '{email}'"
+    if proxy_id != '':
+        where += f" and b.reference = '{proxy_id}'"
+    if send_id != '':
+        innerwhere += f" and c.id = '{send_id}'"
     sql = f'''
         SELECT
             b.user_id,
@@ -974,12 +1006,16 @@ def sum_day_user(request):
                 ) AS month_cnt
             FROM
                 portal_consumeinfo a
+                LEFT JOIN portal_addressinfo c
+                 on a.send_id = c.id
+                 and c.id is not null
             WHERE
                 a. STATUS <> 'fail'
             AND a.create_date >= DATE_ADD(
                 CURDATE(),
                 INTERVAL - DAY (CURDATE()) + 1 DAY
             )
+            {innerwhere}
             GROUP BY
                 1
         ) d ON d.user_id = b.user_id
