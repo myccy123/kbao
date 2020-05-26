@@ -192,7 +192,14 @@ def place_order(request):
     proxy_share = 0
     if user.reference != '':
         proxy = UserInfo.objects.get(user_id=user.reference)
-        proxy_share = proxy.price if proxy.price > 0 else 0
+        proxy_price = proxy.price if proxy.price > 0 else 0
+        try:
+            proxy_share = Decimal(body.get('amt'))-proxy_price
+            if proxy_share < 0 :
+                proxy_share = 0
+        except:
+            proxy_share = 0
+
 
     res = ConsumeInfo.objects.create(user_id=request.user.username,
                                      express_type=body.get('expressType', ''),
