@@ -77,16 +77,16 @@ def sum_day_user(request):
     if send != '':
         where += f" and send_id = '{send}'"
     sql = f'''
-            select date_format(a.create_date, '%Y-%m-%d') as dt, sum(amt),sum(cost),count(1)
+            select date_format(a.create_date, '%Y-%m-%d') as dt, sum(amt),sum(cost),count(1),sum(proxy_share)
             from portal_consumeinfo a
             left join portal_userinfo b
             on a.user_id = b.user_id
             and b.user_id is not null
-            and b.reference = '{request.user.username}'
             left join portal_addressinfo c
             on a.send_id = c.id
             and c.id is not null
             where status <> 'fail'
+            and b.reference = '{request.user.username}'
             {where}
             group by dt
             order by dt desc
@@ -96,7 +96,7 @@ def sum_day_user(request):
         all_data[row[0]] = {
             'amt': row[1],
             'cost': row[2],
-            'income': row[1] - row[2],
+            'income': row[4],
             'cnt': row[3],
         }
 
@@ -160,12 +160,11 @@ def sum_month_user(request):
     if send != '':
         where += f" and send_id = '{send}'"
     sql = f'''
-               select date_format(a.create_date, '%Y-%m') as dt,sum(amt),sum(cost),count(1)
+               select date_format(a.create_date, '%Y-%m') as dt,sum(amt),sum(cost),count(1),sum(proxy_share)
                from portal_consumeinfo a
                left join portal_userinfo b
                on a.user_id = b.user_id
                and b.user_id is not null
-               and b.reference = '{request.user.username}'
                left join portal_addressinfo c
                on a.send_id = c.id
                and c.id is not null
@@ -179,7 +178,7 @@ def sum_month_user(request):
         all_data[row[0]] = {
             'amt': row[1],
             'cost': row[2],
-            'income': row[1] - row[2],
+            'income': row[4],
             'cnt': row[3],
         }
 
