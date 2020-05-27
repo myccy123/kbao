@@ -617,8 +617,8 @@ def update_send_org(request):
     addr.tel = body.get('sendTel', '')
     addr.org_name = body.get('orgName', '')
     addr.postid = body.get('sendPostid', '')
-    addr.agent_id = body.get('agentId', ''),
-    addr.agent_name = body.get('agentName', ''),
+    addr.agent_id = body.get('agentId', '')
+    addr.agent_name = body.get('agentName', '')
     addr.save()
 
     return success()
