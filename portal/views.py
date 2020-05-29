@@ -765,3 +765,6 @@ def check_pay(request):
 
 def index(request):
     return render(request, 'kbao/index.html')
+
+def no_find_page(request):
+    return render(request, 'kbao/404.html')

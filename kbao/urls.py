@@ -18,14 +18,15 @@ from django.conf.urls import url, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views import static as static_view
-from portal.views import index
+from portal.views import index, no_find_page
 
 urlpatterns = [
     url('admin/', admin.site.urls),
     url(r'^portal/', include('portal.urls')),
     url(r'^kf/', include('kf.urls')),
     url(r'^proxy/', include('proxy.urls')),
-    url(r'^$', index),
+    url(r'^home/$', index),
+    url(r'^$', no_find_page),
 ]
 
 if not settings.DEBUG:
