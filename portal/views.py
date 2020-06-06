@@ -393,7 +393,7 @@ def all_flow(request):
         db = MySQL.connect()
         where = f"where user_id='{request.user.username}'"
         if bgn_date is not None and bgn_date != '':
-            where += f" and a.create_date >= '{bgn_date}'"
+            where += f" and create_date >= '{bgn_date}'"
         if end_date is not None and end_date != '':
             where += f" and create_date <= '{end_date}'"
         if flow_min_amt != -1:
