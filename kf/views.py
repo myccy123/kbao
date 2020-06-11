@@ -322,39 +322,46 @@ def order_resend(request):
     body = loads(request.body)
     infos = []
     resend_length = 0
-    consume = ConsumeInfo.objects.get(id=body.get('id'))
-    addr = AddressInfo.objects.get(id=consume.send_id)
-    c = consume
-    info = {
-        'tid': c.ec_id,
-        'order_id': c.order_id,
-        'goods_name': c.goods_name,
-        'send_city': c.send_city,
-        'send_addr': c.send_addr,
-        'send_county': c.send_county,
-        'send_prov': c.send_prov,
-        'send_tel': c.sender_tel,
-        'send_name': c.sender,
-        'recv_city': c.receive_city,
-        'recv_addr': c.receive_addr,
-        'recv_county': c.receive_county,
-        'recv_prov': c.receive_prov,
-        'recv_tel': c.receiver_tel,
-        'recv_name': c.receiver,
-    }
-    infos.append(info)
-    res = resend_package(infos, addr.agent_id)
-    if res['status'] == '00':
-        resend_length = 1
-        status = 'pending'
-        if res['is_printed']:
-            status = 'done'
-            c.print_date = res.get('print_date')
-        if c.status != 'done':
-            c.status = status
-            c.task_id = res['task_id']
-        c.resend_num = 1 if c.resend_num is None else c.resend_num + 1
-        c.save()
+    consume = None
+    if body.get('id', '') != '':
+        consume = ConsumeInfo.objects.filter(id__in=body.get('id'))
+    elif body.get('orderId', '') != '':
+        consume = ConsumeInfo.objects.filter(order_id=body.get('orderId'))
+    if consume is not None:
+        for c in consume:
+            if c is None:
+                continue
+            addr = AddressInfo.objects.get(id=c.send_id)
+            info = {
+                'tid': c.ec_id,
+                'order_id': c.order_id,
+                'goods_name': c.goods_name,
+                'send_city': c.send_city,
+                'send_addr': c.send_addr,
+                'send_county': c.send_county,
+                'send_prov': c.send_prov,
+                'send_tel': c.sender_tel,
+                'send_name': c.sender,
+                'recv_city': c.receive_city,
+                'recv_addr': c.receive_addr,
+                'recv_county': c.receive_county,
+                'recv_prov': c.receive_prov,
+                'recv_tel': c.receiver_tel,
+                'recv_name': c.receiver,
+            }
+            infos.append(info)
+            res = resend_package(infos, addr.agent_id)
+            if res['status'] == '00':
+                resend_length = 1
+                status = 'pending'
+                if res['is_printed']:
+                    status = 'done'
+                    c.print_date = res.get('print_date')
+                if c.status != 'done':
+                    c.status = status
+                    c.task_id = res['task_id']
+                c.resend_num = 1 if c.resend_num is None else c.resend_num + 1
+                c.save()
 
     if resend_length > 0:
         return success({'resend': '1'})
